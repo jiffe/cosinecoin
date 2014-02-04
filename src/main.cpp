@@ -74,14 +74,10 @@ int64 nTransactionFee = 0;
 int64 nMinimumInputValue = DUST_HARD_LIMIT;
 
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// dispatching functions
-//
-
-// These functions dispatch to one or all registered wallets
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void RegisterWallet(CWallet* pwalletIn) {
     {
         LOCK(cs_setpwalletRegistered);
@@ -89,6 +85,11 @@ void RegisterWallet(CWallet* pwalletIn) {
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void UnregisterWallet(CWallet* pwalletIn) {
     {
         LOCK(cs_setpwalletRegistered);
@@ -96,7 +97,11 @@ void UnregisterWallet(CWallet* pwalletIn) {
     }
 }
 
-// get the wallet transaction with the given hash (if it exists)
+
+/***************************************************************************************************
+* get the wallet transaction with the given hash (if it exists)
+*
+***************************************************************************************************/
 bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx) {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         if (pwallet->GetTransaction(hashTx,wtx))
@@ -104,80 +109,199 @@ bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx) {
     return false;
 }
 
-// erases transaction with the given hash from all wallets
+
+/***************************************************************************************************
+* erases transaction with the given hash from all wallets
+*
+***************************************************************************************************/
 void static EraseFromWallets(uint256 hash) {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         pwallet->EraseFromWallet(hash);
 }
 
-// make sure all wallets know about the given transaction, in the given block
+
+/***************************************************************************************************
+* make sure all wallets know about the given transaction, in the given block
+*
+***************************************************************************************************/
 void SyncWithWallets(const uint256 &hash, const CTransaction& tx, const CBlock* pblock, bool fUpdate) {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         pwallet->AddToWalletIfInvolvingMe(hash, tx, pblock, fUpdate);
 }
 
-// notify wallets about a new best chain
+
+/***************************************************************************************************
+* notify wallets about a new best chain
+*
+***************************************************************************************************/
 void static SetBestChain(const CBlockLocator& loc) {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         pwallet->SetBestChain(loc);
 }
 
-// notify wallets about an updated transaction
+
+/***************************************************************************************************
+* notify wallets about an updated transaction
+*
+***************************************************************************************************/
 void static UpdatedTransaction(const uint256& hashTx) {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         pwallet->UpdatedTransaction(hashTx);
 }
 
-// dump all wallets
+
+/***************************************************************************************************
+* dump all wallets
+*
+***************************************************************************************************/
 void static PrintWallets(const CBlock& block) {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         pwallet->PrintWallet(block);
 }
 
-// notify wallets about an incoming inventory (for request counts)
+
+/***************************************************************************************************
+* notify wallets about an incoming inventory (for request counts)
+*
+***************************************************************************************************/
 void static Inventory(const uint256& hash) {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         pwallet->Inventory(hash);
 }
 
-// ask wallets to resend their transactions
+
+/***************************************************************************************************
+* ask wallets to resend their transactions
+*
+***************************************************************************************************/
 void static ResendWalletTransactions() {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         pwallet->ResendWalletTransactions();
 }
 
 
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// CCoinsView implementations
-//
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsView::GetCoins(const uint256 &txid, CCoins &coins) { return false; }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsView::SetCoins(const uint256 &txid, const CCoins &coins) { return false; }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsView::HaveCoins(const uint256 &txid) { return false; }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CBlockIndex *CCoinsView::GetBestBlock() { return NULL; }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsView::SetBestBlock(CBlockIndex *pindex) { return false; }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsView::BatchWrite(const std::map<uint256, CCoins> &mapCoins, CBlockIndex *pindex) { return false; }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsView::GetStats(CCoinsStats &stats) { return false; }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CCoinsViewBacked::CCoinsViewBacked(CCoinsView &viewIn) : base(&viewIn) { }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewBacked::GetCoins(const uint256 &txid, CCoins &coins) { return base->GetCoins(txid, coins); }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewBacked::SetCoins(const uint256 &txid, const CCoins &coins) { return base->SetCoins(txid, coins); }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewBacked::HaveCoins(const uint256 &txid) { return base->HaveCoins(txid); }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CBlockIndex *CCoinsViewBacked::GetBestBlock() { return base->GetBestBlock(); }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewBacked::SetBestBlock(CBlockIndex *pindex) { return base->SetBestBlock(pindex); }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewBacked::BatchWrite(const std::map<uint256, CCoins> &mapCoins, CBlockIndex *pindex) { return base->BatchWrite(mapCoins, pindex); }
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewBacked::GetStats(CCoinsStats &stats) { return base->GetStats(stats); }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CCoinsViewCache::CCoinsViewCache(CCoinsView &baseIn, bool fDummy) : CCoinsViewBacked(baseIn), pindexTip(NULL) { }
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewCache::GetCoins(const uint256 &txid, CCoins &coins) {
     if (cacheCoins.count(txid)) {
         coins = cacheCoins[txid];
@@ -190,6 +314,11 @@ bool CCoinsViewCache::GetCoins(const uint256 &txid, CCoins &coins) {
     return false;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 std::map<uint256,CCoins>::iterator CCoinsViewCache::FetchCoins(const uint256 &txid) {
     std::map<uint256,CCoins>::iterator it = cacheCoins.lower_bound(txid);
     if (it != cacheCoins.end() && it->first == txid)
@@ -202,32 +331,62 @@ std::map<uint256,CCoins>::iterator CCoinsViewCache::FetchCoins(const uint256 &tx
     return ret;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CCoins &CCoinsViewCache::GetCoins(const uint256 &txid) {
     std::map<uint256,CCoins>::iterator it = FetchCoins(txid);
     assert(it != cacheCoins.end());
     return it->second;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewCache::SetCoins(const uint256 &txid, const CCoins &coins) {
     cacheCoins[txid] = coins;
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewCache::HaveCoins(const uint256 &txid) {
     return FetchCoins(txid) != cacheCoins.end();
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CBlockIndex *CCoinsViewCache::GetBestBlock() {
     if (pindexTip == NULL)
         pindexTip = base->GetBestBlock();
     return pindexTip;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewCache::SetBestBlock(CBlockIndex *pindex) {
     pindexTip = pindex;
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewCache::BatchWrite(const std::map<uint256, CCoins> &mapCoins, CBlockIndex *pindex) {
     for (std::map<uint256, CCoins>::const_iterator it = mapCoins.begin(); it != mapCoins.end(); it++)
         cacheCoins[it->first] = it->second;
@@ -235,6 +394,11 @@ bool CCoinsViewCache::BatchWrite(const std::map<uint256, CCoins> &mapCoins, CBlo
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewCache::Flush() {
     bool fOk = base->BatchWrite(cacheCoins, pindexTip);
     if (fOk)
@@ -242,14 +406,27 @@ bool CCoinsViewCache::Flush() {
     return fOk;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 unsigned int CCoinsViewCache::GetCacheSize() {
     return cacheCoins.size();
 }
 
-/** CCoinsView that brings transactions from a memorypool into view.
-    It does not check for spendings by memory pool transactions. */
+ 
+/***************************************************************************************************
+* CCoinsView that brings transactions from a memorypool into view.
+* It does not check for spendings by memory pool transactions.
+***************************************************************************************************/
 CCoinsViewMemPool::CCoinsViewMemPool(CCoinsView &baseIn, CTxMemPool &mempoolIn) : CCoinsViewBacked(baseIn), mempool(mempoolIn) { }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewMemPool::GetCoins(const uint256 &txid, CCoins &coins) {
     if (base->GetCoins(txid, coins))
         return true;
@@ -261,18 +438,24 @@ bool CCoinsViewMemPool::GetCoins(const uint256 &txid, CCoins &coins) {
     return false;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CCoinsViewMemPool::HaveCoins(const uint256 &txid) {
     return mempool.exists(txid) || base->HaveCoins(txid);
 }
 
+
 CCoinsViewCache *pcoinsTip = NULL;
 CBlockTreeDB *pblocktree = NULL;
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// mapOrphanTransactions
-//
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool AddOrphanTx(const CTransaction& tx) {
     uint256 hash = tx.GetHash();
     if (mapOrphanTransactions.count(hash))
@@ -301,6 +484,11 @@ bool AddOrphanTx(const CTransaction& tx) {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void static EraseOrphanTx(uint256 hash) {
     if (!mapOrphanTransactions.count(hash))
         return;
@@ -314,6 +502,11 @@ void static EraseOrphanTx(uint256 hash) {
     mapOrphanTransactions.erase(hash);
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans) {
     unsigned int nEvicted = 0;
     while (mapOrphanTransactions.size() > nMaxOrphans)
@@ -330,22 +523,21 @@ unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans) {
 }
 
 
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// CTransaction / CTxOut
-//
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTxOut::IsDust() const {
     // CosineCoin: IsDust() detection disabled, allows any valid dust to be relayed.
     // The fees imposed on each dust txo is considered sufficient spam deterrant. 
     return false;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTransaction::IsStandard(string& strReason) const {
     if (nVersion > CTransaction::CURRENT_VERSION || nVersion < 1) {
         strReason = "version";
@@ -394,17 +586,19 @@ bool CTransaction::IsStandard(string& strReason) const {
     return true;
 }
 
-//
-// Check transaction inputs, and make sure any
-// pay-to-script-hash transactions are evaluating IsStandard scripts
-//
-// Why bother? To avoid denial-of-service attacks; an attacker
-// can submit a standard HASH... OP_EQUAL transaction,
-// which will get accepted into blocks. The redemption
-// script can be anything; an attacker could use a very
-// expensive-to-check-upon-redemption script like:
-//   DUP CHECKSIG DROP ... repeated 100 times... OP_1
-//
+
+/***************************************************************************************************
+* Check transaction inputs, and make sure any
+* pay-to-script-hash transactions are evaluating IsStandard scripts
+*
+* Why bother? To avoid denial-of-service attacks; an attacker
+* can submit a standard HASH... OP_EQUAL transaction,
+* which will get accepted into blocks. The redemption
+* script can be anything; an attacker could use a very
+* expensive-to-check-upon-redemption script like:
+* DUP CHECKSIG DROP ... repeated 100 times... OP_1
+*
+***************************************************************************************************/
 bool CTransaction::AreInputsStandard(CCoinsViewCache& mapInputs) const {
     if (IsCoinBase())
         return true; // Coinbases don't use vin normally
@@ -458,6 +652,11 @@ bool CTransaction::AreInputsStandard(CCoinsViewCache& mapInputs) const {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 unsigned int CTransaction::GetLegacySigOpCount() const {
     unsigned int nSigOps = 0;
     BOOST_FOREACH(const CTxIn& txin, vin)
@@ -472,6 +671,10 @@ unsigned int CTransaction::GetLegacySigOpCount() const {
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 int CMerkleTx::SetMerkleBranch(const CBlock* pblock) {
     CBlock blockTmp;
 
@@ -519,11 +722,10 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock) {
 }
 
 
-
-
-
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTransaction::CheckTransaction(CValidationState &state) const {
     // Basic checks that don't depend on any context
     if (vin.empty())
@@ -571,6 +773,11 @@ bool CTransaction::CheckTransaction(CValidationState &state) const {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 int64 CTransaction::GetMinFee(unsigned int nBlockSize, bool fAllowFree, enum GetMinFee_mode mode) const {
     // Base fee is either nMinTxFee or nMinRelayTxFee
     int64 nBaseFee = (mode == GMF_RELAY) ? nMinRelayTxFee : nMinTxFee;
@@ -610,6 +817,11 @@ int64 CTransaction::GetMinFee(unsigned int nBlockSize, bool fAllowFree, enum Get
     return nMinFee;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void CTxMemPool::pruneSpent(const uint256 &hashTx, CCoins &coins) {
     LOCK(cs);
 
@@ -622,6 +834,11 @@ void CTxMemPool::pruneSpent(const uint256 &hashTx, CCoins &coins) {
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTxMemPool::accept(CValidationState &state, CTransaction &tx, bool fCheckInputs, bool fLimitFree, bool* pfMissingInputs) {
     if (pfMissingInputs)
         *pfMissingInputs = false;
@@ -784,6 +1001,11 @@ bool CTxMemPool::accept(CValidationState &state, CTransaction &tx, bool fCheckIn
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTransaction::AcceptToMemoryPool(CValidationState &state, bool fCheckInputs, bool fLimitFree, bool* pfMissingInputs) {
     try {
         return mempool.accept(state, *this, fCheckInputs, fLimitFree, pfMissingInputs);
@@ -792,6 +1014,11 @@ bool CTransaction::AcceptToMemoryPool(CValidationState &state, bool fCheckInputs
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTxMemPool::addUnchecked(const uint256& hash, const CTransaction &tx) {
     // Add to memory pool without checking anything.  Don't call this directly,
     // call CTxMemPool::accept to properly check the transaction first.
@@ -805,6 +1032,10 @@ bool CTxMemPool::addUnchecked(const uint256& hash, const CTransaction &tx) {
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTxMemPool::remove(const CTransaction &tx, bool fRecursive) {
     // Remove transaction from memory pool
     {
@@ -828,6 +1059,11 @@ bool CTxMemPool::remove(const CTransaction &tx, bool fRecursive) {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTxMemPool::removeConflicts(const CTransaction &tx) {
     // Remove transactions which depend on inputs of tx, recursively
     LOCK(cs);
@@ -842,6 +1078,11 @@ bool CTxMemPool::removeConflicts(const CTransaction &tx) {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void CTxMemPool::clear() {
     LOCK(cs);
     mapTx.clear();
@@ -849,6 +1090,11 @@ void CTxMemPool::clear() {
     ++nTransactionsUpdated;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void CTxMemPool::queryHashes(std::vector<uint256>& vtxid) {
     vtxid.clear();
 
@@ -859,8 +1105,10 @@ void CTxMemPool::queryHashes(std::vector<uint256>& vtxid) {
 }
 
 
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet) const {
     if (hashBlock == 0 || nIndex == -1)
         return 0;
@@ -886,6 +1134,10 @@ int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet) const {
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 int CMerkleTx::GetBlocksToMaturity() const {
     if (!IsCoinBase())
         return 0;
@@ -893,13 +1145,20 @@ int CMerkleTx::GetBlocksToMaturity() const {
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CMerkleTx::AcceptToMemoryPool(bool fCheckInputs, bool fLimitFree) {
     CValidationState state;
     return CTransaction::AcceptToMemoryPool(state, fCheckInputs, fLimitFree);
 }
 
 
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CWalletTx::AcceptWalletTransaction(bool fCheckInputs) {
     {
         LOCK(mempool.cs);
@@ -918,8 +1177,11 @@ bool CWalletTx::AcceptWalletTransaction(bool fCheckInputs) {
     return false;
 }
 
-
-// Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock
+ 
+/***************************************************************************************************
+* Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock
+*
+***************************************************************************************************/
 bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock, bool fAllowSlow) {
     CBlockIndex *pindexSlow = NULL;
     {
@@ -992,6 +1254,12 @@ bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock
 //
 
 static CBlockIndex* pblockindexFBBHLast;
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CBlockIndex* FindBlockByHeight(int nHeight) {
     CBlockIndex *pblockindex;
     if (nHeight < nBestHeight / 2)
@@ -1008,6 +1276,11 @@ CBlockIndex* FindBlockByHeight(int nHeight) {
     return pblockindex;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CBlock::ReadFromDisk(const CBlockIndex* pindex) {
     if (!ReadFromDisk(pindex->GetBlockPos()))
         return false;
@@ -1016,6 +1289,11 @@ bool CBlock::ReadFromDisk(const CBlockIndex* pindex) {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 uint256 static GetOrphanRoot(const CBlockHeader* pblock) {
     // Work back to the first block in the orphan chain
     while (mapOrphanBlocks.count(pblock->hashPrevBlock))
@@ -1023,23 +1301,37 @@ uint256 static GetOrphanRoot(const CBlockHeader* pblock) {
     return pblock->GetHash();
 }
 
-int64 static GetBlockValue(int nHeight, int64 nFees) {
-    int64 nSubsidy = 50 * COIN;
 
-    // Subsidy is cut in half every 840000 blocks, which will occur approximately every 4 years
-    nSubsidy >>= (nHeight / 840000); // CosineCoin: 840k blocks in ~4 years
-
-    return nSubsidy + nFees;
+/***************************************************************************************************
+* The reward curve is represented by an approximated cosine curve shifting 180 degrees and shifted
+* to a minimum zero value
+***************************************************************************************************/
+int64 static GetBlockValue(int nHeight, int64 nFees) {	
+	int max = 86400;
+	int offset = 500;
+	long double rad =  2 * 3.14159 * (long double)(nHeight - offset) / (long double)max;
+	
+	if(rad < 0 || nHeight - offset > max) return nFees;
+	
+	rad -= 3.14159;
+	
+	long double cosine = 2.0 - (rad*rad)/2.0 + (rad*rad*rad*rad)/24.0 - (rad*rad*rad*rad*rad*rad)/720.0 + (rad*rad*rad*rad*rad*rad*rad*rad)/40320.0;
+	
+	int64 nSubsidy = cosine * 50 * COIN;
+	
+	return nSubsidy + nFees;
 }
 
+
 static const int64 nTargetTimespan = 3.5 * 24 * 60 * 60; // CosineCoin: 3.5 days
-static const int64 nTargetSpacing = 2.5 * 60; // CosineCoin: 2.5 minutes
+static const int64 nTargetSpacing = 60; // CosineCoin: 1 minutes
 static const int64 nInterval = nTargetTimespan / nTargetSpacing;
 
-//
-// minimum amount of work that could possibly be required nTime after
-// minimum work required was nBase
-//
+
+/***************************************************************************************************
+* minimum amount of work that could possibly be required nTime after
+* minimum work required was nBase
+***************************************************************************************************/
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime) {
     // Testnet has min-difficulty blocks
     // after nTargetSpacing*2 time between blocks:
@@ -1060,6 +1352,11 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime) {
     return bnResult.GetCompact();
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock) {
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
 
@@ -1128,6 +1425,11 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     return bnNew.GetCompact();
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CheckProofOfWork(uint256 hash, unsigned int nBits) {
     CBigNum bnTarget;
     bnTarget.SetCompact(nBits);
@@ -1143,11 +1445,20 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits) {
     return true;
 }
 
-// Return maximum amount of blocks that other nodes claim to have
+
+/***************************************************************************************************
+* Return maximum amount of blocks that other nodes claim to have
+*
+***************************************************************************************************/
 int GetNumBlocksOfPeers() {
     return std::max(cPeerBlockCounts.median(), Checkpoints::GetTotalBlocksEstimate());
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool IsInitialBlockDownload() {
     if (pindexBest == NULL || fImporting || fReindex || nBestHeight < Checkpoints::GetTotalBlocksEstimate())
         return true;
@@ -1162,6 +1473,11 @@ bool IsInitialBlockDownload() {
             pindexBest->GetBlockTime() < GetTime() - 24 * 60 * 60);
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void static InvalidChainFound(CBlockIndex* pindexNew) {
     if (pindexNew->nChainWork > nBestInvalidWork)
     {
@@ -1180,6 +1496,11 @@ void static InvalidChainFound(CBlockIndex* pindexNew) {
         printf("InvalidChainFound: Warning: Displayed transactions may not be correct! You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void static InvalidBlockFound(CBlockIndex *pindex) {
     pindex->nStatus |= BLOCK_FAILED_VALID;
     pblocktree->WriteBlockIndex(CDiskBlockIndex(pindex));
@@ -1191,6 +1512,11 @@ void static InvalidBlockFound(CBlockIndex *pindex) {
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool ConnectBestBlock(CValidationState &state) {
     do {
         CBlockIndex *pindexNewBest;
@@ -1243,6 +1569,11 @@ bool ConnectBestBlock(CValidationState &state) {
     } while(true);
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void CBlockHeader::UpdateTime(const CBlockIndex* pindexPrev) {
     nTime = max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
 
@@ -1252,21 +1583,21 @@ void CBlockHeader::UpdateTime(const CBlockIndex* pindexPrev) {
 }
 
 
-
-
-
-
-
-
-
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 const CTxOut &CTransaction::GetOutputFor(const CTxIn& input, CCoinsViewCache& view) {
     const CCoins &coins = view.GetCoins(input.prevout.hash);
     assert(coins.IsAvailable(input.prevout.n));
     return coins.vout[input.prevout.n];
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 int64 CTransaction::GetValueIn(CCoinsViewCache& inputs) const {
     if (IsCoinBase())
         return 0;
@@ -1278,6 +1609,11 @@ int64 CTransaction::GetValueIn(CCoinsViewCache& inputs) const {
     return nResult;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 unsigned int CTransaction::GetP2SHSigOpCount(CCoinsViewCache& inputs) const {
     if (IsCoinBase())
         return 0;
@@ -1292,6 +1628,11 @@ unsigned int CTransaction::GetP2SHSigOpCount(CCoinsViewCache& inputs) const {
     return nSigOps;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void CTransaction::UpdateCoins(CValidationState &state, CCoinsViewCache &inputs, CTxUndo &txundo, int nHeight, const uint256 &txhash) const {
     // mark inputs spent
     if (!IsCoinBase()) {
@@ -1307,6 +1648,11 @@ void CTransaction::UpdateCoins(CValidationState &state, CCoinsViewCache &inputs,
     assert(inputs.SetCoins(txhash, CCoins(*this, nHeight)));
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTransaction::HaveInputs(CCoinsViewCache &inputs) const {
     if (!IsCoinBase()) {
         // first check whether information about the prevout hash is available
@@ -1327,6 +1673,11 @@ bool CTransaction::HaveInputs(CCoinsViewCache &inputs) const {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CScriptCheck::operator()() const {
     const CScript &scriptSig = ptxTo->vin[nIn].scriptSig;
     if (!VerifyScript(scriptSig, scriptPubKey, *ptxTo, nIn, nFlags, nHashType))
@@ -1334,10 +1685,20 @@ bool CScriptCheck::operator()() const {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool VerifySignature(const CCoins& txFrom, const CTransaction& txTo, unsigned int nIn, unsigned int flags, int nHashType) {
     return CScriptCheck(txFrom, txTo, nIn, flags, nHashType)();
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CTransaction::CheckInputs(CValidationState &state, CCoinsViewCache &inputs, bool fScriptChecks, unsigned int flags, std::vector<CScriptCheck> *pvChecks) const {
     if (!IsCoinBase())
     {
@@ -1418,8 +1779,10 @@ bool CTransaction::CheckInputs(CValidationState &state, CCoinsViewCache &inputs,
 }
 
 
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CBlock::DisconnectBlock(CValidationState &state, CBlockIndex *pindex, CCoinsViewCache &view, bool *pfClean) {
     assert(pindex == view.GetBestBlock());
 
@@ -1506,6 +1869,11 @@ bool CBlock::DisconnectBlock(CValidationState &state, CBlockIndex *pindex, CCoin
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void static FlushBlockFile(bool fFinalize = false) {
     LOCK(cs_LastBlockFile);
 
@@ -1528,15 +1896,31 @@ void static FlushBlockFile(bool fFinalize = false) {
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigned int nAddSize);
+
 
 static CCheckQueue<CScriptCheck> scriptcheckqueue(128);
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void ThreadScriptCheck() {
     RenameThread("bitcoin-scriptch");
     scriptcheckqueue.Thread();
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsViewCache &view, bool fJustCheck) {
     // Check it again in case a previous version let a bad block in
     if (!CheckBlock(state, !fJustCheck, !fJustCheck))
@@ -1686,6 +2070,11 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool SetBestChain(CValidationState &state, CBlockIndex* pindexNew) {
     // All modifications to the coin state will be done in this cache.
     // Only when all have succeeded, we push it to pcoinsTip.
@@ -1865,6 +2254,10 @@ bool SetBestChain(CValidationState &state, CBlockIndex* pindexNew) {
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CBlock::AddToBlockIndex(CValidationState &state, const CDiskBlockPos &pos) {
     // Check for duplicate
     uint256 hash = GetHash();
@@ -1914,6 +2307,10 @@ bool CBlock::AddToBlockIndex(CValidationState &state, const CDiskBlockPos &pos) 
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool FindBlockPos(CValidationState &state, CDiskBlockPos &pos, unsigned int nAddSize, unsigned int nHeight, uint64 nTime, bool fKnown = false) {
     bool fUpdatedLast = false;
 
@@ -1967,6 +2364,11 @@ bool FindBlockPos(CValidationState &state, CDiskBlockPos &pos, unsigned int nAdd
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigned int nAddSize) {
     pos.nFile = nFile;
 
@@ -2007,6 +2409,10 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CBlock::CheckBlock(CValidationState &state, bool fCheckPOW, bool fCheckMerkleRoot) const {
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.
@@ -2082,6 +2488,11 @@ bool CBlock::CheckBlock(CValidationState &state, bool fCheckPOW, bool fCheckMerk
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp) {
     // Check for duplicate
     uint256 hash = GetHash();
@@ -2174,6 +2585,11 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp) {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CBlockIndex::IsSuperMajority(int minVersion, const CBlockIndex* pstart, unsigned int nRequired, unsigned int nToCheck) {
     // CosineCoin: temporarily disable v2 block lockin until we are ready for v2 transition
     return false;
@@ -2187,6 +2603,11 @@ bool CBlockIndex::IsSuperMajority(int minVersion, const CBlockIndex* pstart, uns
     return (nFound >= nRequired);
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool ProcessBlock(CValidationState &state, CNode* pfrom, CBlock* pblock, CDiskBlockPos *dbp) {
     // Check for duplicate
     uint256 hash = pblock->GetHash();
@@ -2266,12 +2687,10 @@ bool ProcessBlock(CValidationState &state, CNode* pfrom, CBlock* pblock, CDiskBl
 }
 
 
-
-
-
-
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CMerkleBlock::CMerkleBlock(const CBlock& block, CBloomFilter& filter) {
     header = block.GetBlockHeader();
 
@@ -2298,12 +2717,10 @@ CMerkleBlock::CMerkleBlock(const CBlock& block, CBloomFilter& filter) {
 }
 
 
-
-
-
-
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 uint256 CPartialMerkleTree::CalcHash(int height, unsigned int pos, const std::vector<uint256> &vTxid) {
     if (height == 0) {
         // hash at height 0 is the txids themself
@@ -2321,6 +2738,11 @@ uint256 CPartialMerkleTree::CalcHash(int height, unsigned int pos, const std::ve
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void CPartialMerkleTree::TraverseAndBuild(int height, unsigned int pos, const std::vector<uint256> &vTxid, const std::vector<bool> &vMatch) {
     // determine whether this node is the parent of at least one matched txid
     bool fParentOfMatch = false;
@@ -2339,6 +2761,11 @@ void CPartialMerkleTree::TraverseAndBuild(int height, unsigned int pos, const st
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 uint256 CPartialMerkleTree::TraverseAndExtract(int height, unsigned int pos, unsigned int &nBitsUsed, unsigned int &nHashUsed, std::vector<uint256> &vMatch) {
     if (nBitsUsed >= vBits.size()) {
         // overflowed the bits array - failure
@@ -2369,6 +2796,11 @@ uint256 CPartialMerkleTree::TraverseAndExtract(int height, unsigned int pos, uns
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CPartialMerkleTree::CPartialMerkleTree(const std::vector<uint256> &vTxid, const std::vector<bool> &vMatch) : nTransactions(vTxid.size()), fBad(false) {
     // reset state
     vBits.clear();
@@ -2383,8 +2815,18 @@ CPartialMerkleTree::CPartialMerkleTree(const std::vector<uint256> &vTxid, const 
     TraverseAndBuild(nHeight, 0, vTxid, vMatch);
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CPartialMerkleTree::CPartialMerkleTree() : nTransactions(0), fBad(true) {}
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 uint256 CPartialMerkleTree::ExtractMatches(std::vector<uint256> &vMatch) {
     vMatch.clear();
     // An empty set will not work
@@ -2419,11 +2861,10 @@ uint256 CPartialMerkleTree::ExtractMatches(std::vector<uint256> &vMatch) {
 }
 
 
-
-
-
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool AbortNode(const std::string &strMessage) {
     strMiscWarning = strMessage;
     printf("*** %s\n", strMessage.c_str());
@@ -2432,6 +2873,11 @@ bool AbortNode(const std::string &strMessage) {
     return false;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CheckDiskSpace(uint64 nAdditionalBytes) {
     uint64 nFreeBytesAvailable = filesystem::space(GetDataDir()).available;
 
@@ -2442,10 +2888,16 @@ bool CheckDiskSpace(uint64 nAdditionalBytes) {
     return true;
 }
 
+
 CCriticalSection cs_LastBlockFile;
 CBlockFileInfo infoLastBlockFile;
 int nLastBlockFile = 0;
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 FILE* OpenDiskFile(const CDiskBlockPos &pos, const char *prefix, bool fReadOnly) {
     if (pos.IsNull())
         return NULL;
@@ -2468,14 +2920,29 @@ FILE* OpenDiskFile(const CDiskBlockPos &pos, const char *prefix, bool fReadOnly)
     return file;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 FILE* OpenBlockFile(const CDiskBlockPos &pos, bool fReadOnly) {
     return OpenDiskFile(pos, "blk", fReadOnly);
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 FILE* OpenUndoFile(const CDiskBlockPos &pos, bool fReadOnly) {
     return OpenDiskFile(pos, "rev", fReadOnly);
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CBlockIndex * InsertBlockIndex(uint256 hash) {
     if (hash == 0)
         return NULL;
@@ -2495,6 +2962,11 @@ CBlockIndex * InsertBlockIndex(uint256 hash) {
     return pindexNew;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool static LoadBlockIndexDB() {
     if (!pblocktree->LoadBlockIndexGuts())
         return false;
@@ -2561,6 +3033,11 @@ bool static LoadBlockIndexDB() {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool VerifyDB(int nCheckLevel, int nCheckDepth) {
     if (pindexBest == NULL || pindexBest->pprev == NULL)
         return true;
@@ -2633,6 +3110,11 @@ bool VerifyDB(int nCheckLevel, int nCheckDepth) {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void UnloadBlockIndex() {
     mapBlockIndex.clear();
     setBlockIndexValid.clear();
@@ -2644,6 +3126,11 @@ void UnloadBlockIndex() {
     pindexBest = NULL;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool LoadBlockIndex() {
     if (fTestNet)
     {
@@ -2664,6 +3151,10 @@ bool LoadBlockIndex() {
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool InitBlockIndex() {
     // Check whether we're already initialized
     if (pindexGenesisBlock != NULL)
@@ -2769,7 +3260,10 @@ bool InitBlockIndex() {
 }
 
 
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void PrintBlockTree() {
     // pre-compute tree structure
     map<CBlockIndex*, vector<CBlockIndex*> > mapNext;
@@ -2839,6 +3333,11 @@ void PrintBlockTree() {
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos *dbp) {
     int64 nStart = GetTimeMillis();
 
@@ -2911,22 +3410,14 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos *dbp) {
 }
 
 
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// CAlert
-//
-
 extern map<uint256, CAlert> mapAlerts;
 extern CCriticalSection cs_mapAlerts;
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 string GetWarnings(string strFor) {
     int nPriority = 0;
     string strStatusBar;
@@ -2975,18 +3466,10 @@ string GetWarnings(string strFor) {
 }
 
 
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// Messages
-//
-
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool static AlreadyHave(const CInv& inv) {
     switch (inv.type)
     {
@@ -3017,6 +3500,10 @@ bool static AlreadyHave(const CInv& inv) {
 unsigned char pchMessageStart[4] = { 0xfb, 0xc0, 0xb6, 0xdb }; // CosineCoin: increase each by adding 2 to bitcoin's value.
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void static ProcessGetData(CNode* pfrom) {
     std::deque<CInv>::iterator it = pfrom->vRecvGetData.begin();
 
@@ -3151,6 +3638,11 @@ void static ProcessGetData(CNode* pfrom) {
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv) {
     RandAddSeedPerfmon();
     if (fDebug)
@@ -3746,7 +4238,11 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv) 
     return true;
 }
 
-// requires LOCK(cs_vRecvMsg)
+
+/***************************************************************************************************
+* requires LOCK(cs_vRecvMsg)
+*
+***************************************************************************************************/
 bool ProcessMessages(CNode* pfrom) {
     //if (fDebug)
     //    printf("ProcessMessages(%zu messages)\n", pfrom->vRecvMsg.size());
@@ -3869,6 +4365,10 @@ bool ProcessMessages(CNode* pfrom) {
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool SendMessages(CNode* pto, bool fSendTrickle) {
     TRY_LOCK(cs_main, lockMain);
     if (lockMain) {
@@ -4038,23 +4538,10 @@ bool SendMessages(CNode* pto, bool fSendTrickle) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// CosineCoinMiner
-//
-
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 int static FormatHashBlocks(void* pbuffer, unsigned int len) {
     unsigned char* pdata = (unsigned char*)pbuffer;
     unsigned int blocks = 1 + ((len + 8) / 64);
@@ -4069,9 +4556,14 @@ int static FormatHashBlocks(void* pbuffer, unsigned int len) {
     return blocks;
 }
 
-static const unsigned int pSHA256InitState[8] =
-{0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
 
+static const unsigned int pSHA256InitState[8] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
+
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void SHA256Transform(void* pstate, void* pinput, const void* pinit) {
     SHA256_CTX ctx;
     unsigned char data[64];
@@ -4139,6 +4631,11 @@ public:
     }
 };
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn) {
     // Create new block
     auto_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
@@ -4377,6 +4874,11 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn) {
     return pblocktemplate.release();
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 CBlockTemplate* CreateNewBlockWithKey(CReserveKey& reservekey) {
     CPubKey pubkey;
     if (!reservekey.GetReservedKey(pubkey))
@@ -4386,6 +4888,11 @@ CBlockTemplate* CreateNewBlockWithKey(CReserveKey& reservekey) {
     return CreateNewBlock(scriptPubKey);
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce) {
     // Update nExtraNonce
     static uint256 hashPrevBlock;
@@ -4403,6 +4910,10 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& 
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash1) {
     //
     // Pre-build hash buffers
@@ -4448,6 +4959,10 @@ void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash
 }
 
 
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey) {
     uint256 hash = pblock->GetPoWHash();
     uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
@@ -4485,6 +5000,11 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey) {
     return true;
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void static CosineCoinMiner(CWallet *pwallet) {
     printf("CosineCoinMiner started\n");
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
@@ -4614,6 +5134,11 @@ void static CosineCoinMiner(CWallet *pwallet) {
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet) {
     static boost::thread_group* minerThreads = NULL;
 
@@ -4636,15 +5161,18 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet) {
         minerThreads->create_thread(boost::bind(&CosineCoinMiner, pwallet));
 }
 
-// Amount compression:
-// * If the amount is 0, output 0
-// * first, divide the amount (in base units) by the largest power of 10 possible; call the exponent e (e is max 9)
-// * if e<9, the last digit of the resulting number cannot be 0; store it as d, and drop it (divide by 10)
-//   * call the result n
-//   * output 1 + 10*(9*n + d - 1) + e
-// * if e==9, we only know the resulting number is not zero, so output 1 + 10*(n - 1) + 9
-// (this is decodable, as d is in [1-9] and e is in [0-9])
 
+/***************************************************************************************************
+* Amount compression:
+* If the amount is 0, output 0
+* first, divide the amount (in base units) by the largest power of 10 possible; call the exponent e (e is max 9)
+* if e<9, the last digit of the resulting number cannot be 0; store it as d, and drop it (divide by 10)
+* call the result n
+* output 1 + 10*(9*n + d - 1) + e
+* if e==9, we only know the resulting number is not zero, so output 1 + 10*(n - 1) + 9
+* (this is decodable, as d is in [1-9] and e is in [0-9])
+*
+***************************************************************************************************/
 uint64 CTxOutCompressor::CompressAmount(uint64 n) {
     if (n == 0)
         return 0;
@@ -4663,6 +5191,11 @@ uint64 CTxOutCompressor::CompressAmount(uint64 n) {
     }
 }
 
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
 uint64 CTxOutCompressor::DecompressAmount(uint64 x) {
     // x = 0  OR  x = 1+10*(9*n + d - 1) + e  OR  x = 1+10*(n - 1) + 9
     if (x == 0)
