@@ -1308,7 +1308,7 @@ uint256 static GetOrphanRoot(const CBlockHeader* pblock) {
 ***************************************************************************************************/
 int64 static GetBlockValue(int nHeight, int64 nFees) {	
 	int max = 86400;
-	int offset = 500;
+	int offset = 100;
 	double rad =  6.0 * (double)(nHeight - offset) / (double)max - 3.0;
 	
 	int64 nSubsidy = 0;
