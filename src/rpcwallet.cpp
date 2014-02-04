@@ -1113,7 +1113,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     }
 
     // Received
-    if(wtx.GetDepthInMainChain() >= nMinDepth) {
+    if(listReceived.size() > 0 && wtx.GetDepthInMainChain() >= nMinDepth) {
         BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& r, listReceived) {
             string account;
             if (pwalletMain->mapAddressBook.count(r.first))
