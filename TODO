@@ -1,6 +1,6 @@
 + Display transactions of zero value
 - Access control lists
 - Web based gui rather than QT
-+ More responsive retargeting
+x More responsive retargeting
 o Ability to push genesis block rather than hard code
 x Cosine shaped rewards
