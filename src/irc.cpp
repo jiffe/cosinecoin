@@ -221,7 +221,7 @@ bool GetIPFromIRC(SOCKET hSocket, string strMyName, CNetAddr& ipRet) {
 *
 *
 ***************************************************************************************************/
-void ThreadIRCSeed(void* parg) {
+void ThreadIRCSeed() {
     //IMPLEMENT_RANDOMIZE_STACK(ThreadIRCSeed(parg));
 
     // Make this thread recognisable as the IRC seeding thread
@@ -229,7 +229,7 @@ void ThreadIRCSeed(void* parg) {
 
     try
     {
-        ThreadIRCSeed2(parg);
+        ThreadIRCSeed2(NULL);
     }
     catch (std::exception& e) {
         PrintExceptionContinue(&e, "ThreadIRCSeed()");
@@ -261,8 +261,10 @@ void ThreadIRCSeed2(void* parg) {
         CService addrConnect("92.243.23.21", 6667); // irc.lfnet.org
 
         CService addrIRC("irc.lfnet.org", 6667, true);
-        if (addrIRC.IsValid())
+        if(addrIRC.IsValid()) {
+			printf("Set IRC server irc.lfnet.org\n");
             addrConnect = addrIRC;
+		}
 
         SOCKET hSocket;
         if (!ConnectSocket(addrConnect, hSocket))
