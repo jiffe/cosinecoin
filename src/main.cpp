@@ -1323,13 +1323,9 @@ int64 static GetBlockValue(int nHeight, int64 nFees) {
 }
 
 
-static const int64 nTargetTimespan = 704;	// 42: 8 minutes
-static const int64 nTargetSpacing = 88;	 // 42: 42 sec
+static const int64 nTargetTimespan = 1200;	// 20 minute retarget time
+static const int64 nTargetSpacing = 60;	 // 1 minute block time
 static const int64 nInterval = nTargetTimespan / nTargetSpacing;
-static const int64 nTargetTimespanRe = 1408; // 16 Minutes
-static const int64 nTargetSpacingRe = 88; // 42: 42 seconds
-static const int64 nIntervalRe = nTargetTimespanRe / nTargetSpacingRe;
-static const int64 nDiffChangeTarget = 600000;
 
 
 /***************************************************************************************************
@@ -1337,33 +1333,23 @@ static const int64 nDiffChangeTarget = 600000;
 * minimum work required was nBase
 ***************************************************************************************************/
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime) {
-    // Testnet has min-difficulty blocks
-    // after nTargetSpacing*2 time between blocks:
-    if (fTestNet && nTime > nTargetSpacing*2)
-        return bnProofOfWorkLimit.GetCompact();
+	// Testnet has min-difficulty blocks
+	// after nTargetSpacing*2 time between blocks:
+	if (fTestNet && nTime > nTargetSpacing*2)
+		return bnProofOfWorkLimit.GetCompact();
 
-    CBigNum bnResult;
-    bnResult.SetCompact(nBase);
+	CBigNum bnResult;
+	bnResult.SetCompact(nBase);
 
-
-    while (nTime > 0 && bnResult < bnProofOfWorkLimit)
-    {
-
-        if(nBestHeight+1 < nDiffChangeTarget){
-            // Maximum 400% adjustment...
-            bnResult *= 4;
-            // ... in best-case exactly 4-times-normal target time
-            nTime -= nTargetTimespan*4;
-        } else {
-            // Maximum 10% adjustment...
-            bnResult = (bnResult * 110) / 100;
-            // ... in best-case exactly 4-times-normal target time
-            nTime -= nTargetTimespanRe*4;
-        }
-    }
-    if (bnResult > bnProofOfWorkLimit)
-        bnResult = bnProofOfWorkLimit;
-    return bnResult.GetCompact();
+    while (nTime > 0 && bnResult < bnProofOfWorkLimit) {
+		// Maximum 400% adjustment...
+		bnResult *= 4;
+		// ... in best-case exactly 4-times-normal target time
+		nTime -= nTargetTimespan*4;
+	}
+	if (bnResult > bnProofOfWorkLimit)
+		bnResult = bnProofOfWorkLimit;
+	return bnResult.GetCompact();
 }
 
 
@@ -1374,8 +1360,6 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime) {
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock) {
 	unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
 	
-    int nHeight = pindexLast->nHeight + 1;
-	bool fNewDifficultyProtocol = (nHeight >= nDiffChangeTarget || fTestNet);
 	int blockstogoback = 0;
 	//set default to pre-v6.4.3 patch values
 	int64 retargetTimespan = nTargetTimespan;
@@ -1383,13 +1367,6 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 	int64 retargetInterval = nInterval;
 	// Genesis block
 	if (pindexLast == NULL) return nProofOfWorkLimit;
-
-	//if patch v6.4.3 changes are in effect for block num, alter retarget values 
-	if(fNewDifficultyProtocol) {
-		retargetTimespan = nTargetTimespanRe;
-		retargetSpacing = nTargetSpacingRe;
-		retargetInterval = nIntervalRe;
-	}
 	
 	// Only change once per interval
 	if((pindexLast->nHeight+1) % retargetInterval != 0) {
@@ -1428,15 +1405,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 	CBigNum bnNew;
 	bnNew.SetCompact(pindexLast->nBits);
     
-	// thanks to RealSolid for this code
-	if(fNewDifficultyProtocol) {
-		if (nActualTimespan < (retargetTimespan - (retargetTimespan/10)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/10));
-		if (nActualTimespan > (retargetTimespan + (retargetTimespan/10)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/10));
-	}
-	else {
-		if (nActualTimespan < retargetTimespan/4) nActualTimespan = retargetTimespan/4;
-		if (nActualTimespan > retargetTimespan*4) nActualTimespan = retargetTimespan*4;
-	}
+	if (nActualTimespan < retargetTimespan/4) nActualTimespan = retargetTimespan/4;
+	if (nActualTimespan > retargetTimespan*4) nActualTimespan = retargetTimespan*4;
 	
 	// Retarget
 	bnNew *= nActualTimespan;
