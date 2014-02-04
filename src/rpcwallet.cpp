@@ -19,21 +19,33 @@ using namespace json_spirit;
 int64 nWalletUnlockTime;
 static CCriticalSection cs_nWalletUnlockTime;
 
-std::string HelpRequiringPassphrase()
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+std::string HelpRequiringPassphrase() {
     return pwalletMain && pwalletMain->IsCrypted()
         ? "\nrequires wallet passphrase to be set with walletpassphrase first"
         : "";
 }
 
-void EnsureWalletIsUnlocked()
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+void EnsureWalletIsUnlocked() {
     if (pwalletMain->IsLocked())
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
 }
 
-void WalletTxToJSON(const CWalletTx& wtx, Object& entry)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+void WalletTxToJSON(const CWalletTx& wtx, Object& entry) {
     int confirms = wtx.GetDepthInMainChain();
     entry.push_back(Pair("confirmations", confirms));
     if (wtx.IsCoinBase())
@@ -51,16 +63,24 @@ void WalletTxToJSON(const CWalletTx& wtx, Object& entry)
         entry.push_back(Pair(item.first, item.second));
 }
 
-string AccountFromValue(const Value& value)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+string AccountFromValue(const Value& value) {
     string strAccount = value.get_str();
     if (strAccount == "*")
         throw JSONRPCError(RPC_WALLET_INVALID_ACCOUNT_NAME, "Invalid account name");
     return strAccount;
 }
 
-Value getinfo(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value getinfo(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getinfo\n"
@@ -95,9 +115,11 @@ Value getinfo(const Array& params, bool fHelp)
 }
 
 
-
-Value getnewaddress(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value getnewaddress(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "getnewaddress [account]\n"
@@ -125,8 +147,11 @@ Value getnewaddress(const Array& params, bool fHelp)
 }
 
 
-CBitcoinAddress GetAccountAddress(string strAccount, bool bForceNew=false)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+CBitcoinAddress GetAccountAddress(string strAccount, bool bForceNew=false) {
     CWalletDB walletdb(pwalletMain->strWalletFile);
 
     CAccount account;
@@ -163,8 +188,12 @@ CBitcoinAddress GetAccountAddress(string strAccount, bool bForceNew=false)
     return CBitcoinAddress(account.vchPubKey.GetID());
 }
 
-Value getaccountaddress(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value getaccountaddress(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getaccountaddress <account>\n"
@@ -181,9 +210,11 @@ Value getaccountaddress(const Array& params, bool fHelp)
 }
 
 
-
-Value setaccount(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value setaccount(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "setaccount <cosinecoinaddress> <account>\n"
@@ -212,8 +243,11 @@ Value setaccount(const Array& params, bool fHelp)
 }
 
 
-Value getaccount(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value getaccount(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getaccount <cosinecoinaddress>\n"
@@ -231,8 +265,11 @@ Value getaccount(const Array& params, bool fHelp)
 }
 
 
-Value getaddressesbyaccount(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value getaddressesbyaccount(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getaddressesbyaccount <account>\n"
@@ -253,8 +290,11 @@ Value getaddressesbyaccount(const Array& params, bool fHelp)
 }
 
 
-Value setmininput(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value setmininput(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 1 || params.size() > 1)
         throw runtime_error(
             "setmininput <amount>\n"
@@ -270,8 +310,11 @@ Value setmininput(const Array& params, bool fHelp)
 }
 
 
-Value sendtoaddress(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value sendtoaddress(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 2 || params.size() > 4)
         throw runtime_error(
             "sendtoaddress <cosinecoinaddress> <amount> [comment] [comment-to]\n"
@@ -302,8 +345,12 @@ Value sendtoaddress(const Array& params, bool fHelp)
     return wtx.GetHash().GetHex();
 }
 
-Value listaddressgroupings(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value listaddressgroupings(const Array& params, bool fHelp) {
     if (fHelp)
         throw runtime_error(
             "listaddressgroupings\n"
@@ -333,8 +380,12 @@ Value listaddressgroupings(const Array& params, bool fHelp)
     return jsonGroupings;
 }
 
-Value signmessage(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value signmessage(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 2)
         throw runtime_error(
             "signmessage <cosinecoinaddress> <message>\n"
@@ -368,8 +419,12 @@ Value signmessage(const Array& params, bool fHelp)
     return EncodeBase64(&vchSig[0], vchSig.size());
 }
 
-Value verifymessage(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value verifymessage(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 3)
         throw runtime_error(
             "verifymessage <cosinecoinaddress> <signature> <message>\n"
@@ -405,8 +460,11 @@ Value verifymessage(const Array& params, bool fHelp)
 }
 
 
-Value getreceivedbyaddress(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value getreceivedbyaddress(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "getreceivedbyaddress <cosinecoinaddress> [minconf=1]\n"
@@ -444,8 +502,11 @@ Value getreceivedbyaddress(const Array& params, bool fHelp)
 }
 
 
-void GetAccountAddresses(string strAccount, set<CTxDestination>& setAddress)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+void GetAccountAddresses(string strAccount, set<CTxDestination>& setAddress) {
     BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, pwalletMain->mapAddressBook)
     {
         const CTxDestination& address = item.first;
@@ -455,8 +516,12 @@ void GetAccountAddresses(string strAccount, set<CTxDestination>& setAddress)
     }
 }
 
-Value getreceivedbyaccount(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value getreceivedbyaccount(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "getreceivedbyaccount <account> [minconf=1]\n"
@@ -493,8 +558,11 @@ Value getreceivedbyaccount(const Array& params, bool fHelp)
 }
 
 
-int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth) {
     int64 nBalance = 0;
 
     // Tally wallet transactions
@@ -518,15 +586,22 @@ int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinD
     return nBalance;
 }
 
-int64 GetAccountBalance(const string& strAccount, int nMinDepth)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+int64 GetAccountBalance(const string& strAccount, int nMinDepth) {
     CWalletDB walletdb(pwalletMain->strWalletFile);
     return GetAccountBalance(walletdb, strAccount, nMinDepth);
 }
 
 
-Value getbalance(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value getbalance(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 2)
         throw runtime_error(
             "getbalance [account] [minconf=1]\n"
@@ -576,8 +651,11 @@ Value getbalance(const Array& params, bool fHelp)
 }
 
 
-Value movecmd(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value movecmd(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 3 || params.size() > 5)
         throw runtime_error(
             "move <fromaccount> <toaccount> <amount> [minconf=1] [comment]\n"
@@ -626,8 +704,11 @@ Value movecmd(const Array& params, bool fHelp)
 }
 
 
-Value sendfrom(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value sendfrom(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 3 || params.size() > 6)
         throw runtime_error(
             "sendfrom <fromaccount> <tocosinecoinaddress> <amount> [minconf=1] [comment] [comment-to]\n"
@@ -666,8 +747,11 @@ Value sendfrom(const Array& params, bool fHelp)
 }
 
 
-Value sendmany(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value sendmany(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 2 || params.size() > 4)
         throw runtime_error(
             "sendmany <fromaccount> {address:amount,...} [minconf=1] [comment]\n"
@@ -727,11 +811,12 @@ Value sendmany(const Array& params, bool fHelp)
     return wtx.GetHash().GetHex();
 }
 
-//
-// Used by addmultisigaddress / createmultisig:
-//
-static CScript _createmultisig(const Array& params)
-{
+
+/***************************************************************************************************
+* Used by addmultisigaddress / createmultisig:
+*
+***************************************************************************************************/
+static CScript _createmultisig(const Array& params) {
     int nRequired = params[0].get_int();
     const Array& keys = params[1].get_array();
 
@@ -783,8 +868,12 @@ static CScript _createmultisig(const Array& params)
     return result;
 }
 
-Value addmultisigaddress(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value addmultisigaddress(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 2 || params.size() > 3)
     {
         string msg = "addmultisigaddress <nrequired> <'[\"key\",\"key\"]'> [account]\n"
@@ -807,8 +896,12 @@ Value addmultisigaddress(const Array& params, bool fHelp)
     return CBitcoinAddress(innerID).ToString();
 }
 
-Value createmultisig(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value createmultisig(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 2 || params.size() > 2)
     {
         string msg = "createmultisig <nrequired> <'[\"key\",\"key\"]'>\n"
@@ -832,8 +925,7 @@ Value createmultisig(const Array& params, bool fHelp)
 }
 
 
-struct tallyitem
-{
+struct tallyitem {
     int64 nAmount;
     int nConf;
     vector<uint256> txids;
@@ -844,8 +936,12 @@ struct tallyitem
     }
 };
 
-Value ListReceived(const Array& params, bool fByAccounts)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value ListReceived(const Array& params, bool fByAccounts) {
     // Minimum confirmations
     int nMinDepth = 1;
     if (params.size() > 0)
@@ -944,8 +1040,12 @@ Value ListReceived(const Array& params, bool fByAccounts)
     return ret;
 }
 
-Value listreceivedbyaddress(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value listreceivedbyaddress(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 2)
         throw runtime_error(
             "listreceivedbyaddress [minconf=1] [includeempty=false]\n"
@@ -961,8 +1061,12 @@ Value listreceivedbyaddress(const Array& params, bool fHelp)
     return ListReceived(params, false);
 }
 
-Value listreceivedbyaccount(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value listreceivedbyaccount(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 2)
         throw runtime_error(
             "listreceivedbyaccount [minconf=1] [includeempty=false]\n"
@@ -976,8 +1080,12 @@ Value listreceivedbyaccount(const Array& params, bool fHelp)
     return ListReceived(params, true);
 }
 
-void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret) {
     int64 nFee;
     string strSentAccount;
     list<pair<CTxDestination, int64> > listReceived;
@@ -1005,10 +1113,8 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     }
 
     // Received
-    if (listReceived.size() > 0 && wtx.GetDepthInMainChain() >= nMinDepth)
-    {
-        BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& r, listReceived)
-        {
+    if(wtx.GetDepthInMainChain() >= nMinDepth) {
+        BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& r, listReceived) {
             string account;
             if (pwalletMain->mapAddressBook.count(r.first))
                 account = pwalletMain->mapAddressBook[r.first];
@@ -1037,8 +1143,12 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     }
 }
 
-void AcentryToJSON(const CAccountingEntry& acentry, const string& strAccount, Array& ret)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+void AcentryToJSON(const CAccountingEntry& acentry, const string& strAccount, Array& ret) {
     bool fAllAccounts = (strAccount == string("*"));
 
     if (fAllAccounts || acentry.strAccount == strAccount)
@@ -1054,8 +1164,12 @@ void AcentryToJSON(const CAccountingEntry& acentry, const string& strAccount, Ar
     }
 }
 
-Value listtransactions(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value listtransactions(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 3)
         throw runtime_error(
             "listtransactions [account] [count=10] [from=0]\n"
@@ -1112,8 +1226,12 @@ Value listtransactions(const Array& params, bool fHelp)
     return ret;
 }
 
-Value listaccounts(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value listaccounts(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "listaccounts [minconf=1]\n"
@@ -1162,8 +1280,12 @@ Value listaccounts(const Array& params, bool fHelp)
     return ret;
 }
 
-Value listsinceblock(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value listsinceblock(const Array& params, bool fHelp) {
     if (fHelp)
         throw runtime_error(
             "listsinceblock [blockhash] [target-confirmations]\n"
@@ -1225,8 +1347,12 @@ Value listsinceblock(const Array& params, bool fHelp)
     return ret;
 }
 
-Value gettransaction(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value gettransaction(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "gettransaction <txid>\n"
@@ -1259,8 +1385,11 @@ Value gettransaction(const Array& params, bool fHelp)
 }
 
 
-Value backupwallet(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value backupwallet(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "backupwallet <destination>\n"
@@ -1274,8 +1403,11 @@ Value backupwallet(const Array& params, bool fHelp)
 }
 
 
-Value keypoolrefill(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value keypoolrefill(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 0)
         throw runtime_error(
             "keypoolrefill\n"
@@ -1293,16 +1425,23 @@ Value keypoolrefill(const Array& params, bool fHelp)
 }
 
 
-void ThreadTopUpKeyPool(void* parg)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+void ThreadTopUpKeyPool(void* parg) {
     // Make this thread recognisable as the key-topping-up thread
     RenameThread("bitcoin-key-top");
 
     pwalletMain->TopUpKeyPool();
 }
 
-void ThreadCleanWalletPassphrase(void* parg)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+void ThreadCleanWalletPassphrase(void* parg) {
     // Make this thread recognisable as the wallet relocking thread
     RenameThread("bitcoin-lock-wa");
 
@@ -1345,8 +1484,12 @@ void ThreadCleanWalletPassphrase(void* parg)
     delete (int64*)parg;
 }
 
-Value walletpassphrase(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value walletpassphrase(const Array& params, bool fHelp) {
     if (pwalletMain->IsCrypted() && (fHelp || params.size() != 2))
         throw runtime_error(
             "walletpassphrase <passphrase> <timeout>\n"
@@ -1384,8 +1527,11 @@ Value walletpassphrase(const Array& params, bool fHelp)
 }
 
 
-Value walletpassphrasechange(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value walletpassphrasechange(const Array& params, bool fHelp) {
     if (pwalletMain->IsCrypted() && (fHelp || params.size() != 2))
         throw runtime_error(
             "walletpassphrasechange <oldpassphrase> <newpassphrase>\n"
@@ -1417,8 +1563,11 @@ Value walletpassphrasechange(const Array& params, bool fHelp)
 }
 
 
-Value walletlock(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value walletlock(const Array& params, bool fHelp) {
     if (pwalletMain->IsCrypted() && (fHelp || params.size() != 0))
         throw runtime_error(
             "walletlock\n"
@@ -1440,8 +1589,11 @@ Value walletlock(const Array& params, bool fHelp)
 }
 
 
-Value encryptwallet(const Array& params, bool fHelp)
-{
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value encryptwallet(const Array& params, bool fHelp) {
     if (!pwalletMain->IsCrypted() && (fHelp || params.size() != 1))
         throw runtime_error(
             "encryptwallet <passphrase>\n"
@@ -1472,8 +1624,8 @@ Value encryptwallet(const Array& params, bool fHelp)
     return "wallet encrypted; CosineCoin server stopping, restart to run with encrypted wallet. The keypool has been flushed, you need to make a new backup.";
 }
 
-class DescribeAddressVisitor : public boost::static_visitor<Object>
-{
+
+class DescribeAddressVisitor : public boost::static_visitor<Object> {
 public:
     Object operator()(const CNoDestination &dest) const { return Object(); }
 
@@ -1507,8 +1659,12 @@ public:
     }
 };
 
-Value validateaddress(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value validateaddress(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "validateaddress <cosinecoinaddress>\n"
@@ -1536,8 +1692,12 @@ Value validateaddress(const Array& params, bool fHelp)
     return ret;
 }
 
-Value lockunspent(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value lockunspent(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "lockunspent unlock? [array-of-Objects]\n"
@@ -1584,8 +1744,12 @@ Value lockunspent(const Array& params, bool fHelp)
     return true;
 }
 
-Value listlockunspent(const Array& params, bool fHelp)
-{
+
+/***************************************************************************************************
+*
+*
+***************************************************************************************************/
+Value listlockunspent(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 0)
         throw runtime_error(
             "listlockunspent\n"
