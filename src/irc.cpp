@@ -5,6 +5,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <netdb.h>
 #include "irc.h"
 #include "net.h"
 #include "strlcpy.h"
@@ -255,16 +256,52 @@ void ThreadIRCSeed2(void* parg) {
     printf("ThreadIRCSeed started\n");
     int nErrorWait = 10;
     int nRetryWait = 10;
+	
+	struct hostent entries;
+	struct hostent *result;
+	int index = -1;
+	int len = 0;
+	int err = 0;
+	int rc = 0;
+	char *buf = NULL;
 
-    while (!fRequestShutdown)
-    {
-        CService addrConnect("92.243.23.21", 6667); // irc.lfnet.org
-
-        CService addrIRC("irc.lfnet.org", 6667, true);
-        if(addrIRC.IsValid()) {
-			printf("Set IRC server irc.lfnet.org\n");
-            addrConnect = addrIRC;
+    while(!fRequestShutdown) {
+		if(index < 0) {
+			while((rc = gethostbyname_r("irc.lfnet.org", &entries, buf, len, &result, &err)) == ERANGE) {
+				/* expand buf */
+				len *= 2;
+				buf = (char *)realloc(buf, len);
+				if(NULL == buf) {
+					printf("Memory allocation error during IRC DNS resolution\n");
+					Wait(10);
+					continue;
+				}
+			}
+			if(0 != rc || NULL == result) {
+				printf("Failed to resolve IRC server irc.lfnet.org\n");
+				Wait(10);
+				continue;
+			}
 		}
+		
+		if(++index >= entries.h_length) {
+			index = -1;
+			printf("Exhausted all irc IP entries, starting over in 10 seconds\n");
+			Wait(10);
+			continue;
+		}
+		
+	
+        //CService addrConnect("92.243.23.21", 6667); // irc.lfnet.org
+		struct in_addr *ipptr = (struct in_addr *)entries.h_addr_list[index];
+		printf("Trying IRC server %s\n", inet_ntoa(*ipptr));
+		CService addrConnect(inet_ntoa(*ipptr), 6667);
+
+        //CService addrIRC("irc.lfnet.org", 6667, true);
+        //if(addrIRC.IsValid()) {
+		//	printf("Set IRC server irc.lfnet.org\n");
+        //    addrConnect = addrIRC;
+		//}
 
         SOCKET hSocket;
         if (!ConnectSocket(addrConnect, hSocket))
@@ -405,6 +442,9 @@ void ThreadIRCSeed2(void* parg) {
         if (!Wait(nRetryWait += 60))
             return;
     }
+	
+	if(buf)
+		free(buf);
 }
 
 
