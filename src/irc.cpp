@@ -262,8 +262,8 @@ void ThreadIRCSeed2(void* parg) {
 	int index = -1;
 	int len = 0;
 	int err = 0;
-	int rc = 0;
-	char *buf = NULL;
+	int rc = 1024;
+	char *buf = (char *)realloc(NULL, len);
 
     while(!fRequestShutdown) {
 		if(index < 0) {
