@@ -291,17 +291,9 @@ void ThreadIRCSeed2(void* parg) {
 			continue;
 		}
 		
-	
-        //CService addrConnect("92.243.23.21", 6667); // irc.lfnet.org
 		struct in_addr *ipptr = (struct in_addr *)entries.h_addr_list[index];
 		printf("Trying IRC server %s\n", inet_ntoa(*ipptr));
 		CService addrConnect(inet_ntoa(*ipptr), 6667);
-
-        //CService addrIRC("irc.lfnet.org", 6667, true);
-        //if(addrIRC.IsValid()) {
-		//	printf("Set IRC server irc.lfnet.org\n");
-        //    addrConnect = addrIRC;
-		//}
 
         SOCKET hSocket;
         if (!ConnectSocket(addrConnect, hSocket))
