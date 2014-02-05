@@ -260,9 +260,9 @@ void ThreadIRCSeed2(void* parg) {
 	struct hostent entries;
 	struct hostent *result;
 	int index = -1;
-	int len = 0;
+	int len = 1024;
 	int err = 0;
-	int rc = 1024;
+	int rc = 0;
 	char *buf = (char *)realloc(NULL, len);
 
     while(!fRequestShutdown) {
