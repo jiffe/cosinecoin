@@ -272,9 +272,9 @@ class CBitcoinAddress : public CBase58Data
 public:
     enum
     {
-        PUBKEY_ADDRESS = 11, // CosineCoin addresses start with C
+        PUBKEY_ADDRESS = 28, // CosineCoin addresses start with C
         SCRIPT_ADDRESS = 5,
-        PUBKEY_ADDRESS_TEST = 111,
+        PUBKEY_ADDRESS_TEST = 88,
         SCRIPT_ADDRESS_TEST = 196,
     };
 

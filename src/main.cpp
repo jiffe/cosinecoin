@@ -31,7 +31,7 @@ CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
-uint256 hashGenesisBlock("0x1946a32f363ece171627b164938cc54ee28ba4d972c3213bfb61ac2e84cd7e55");
+uint256 hashGenesisBlock("0x1ed63d92663baeb5818699bd57efd23a4b96aa0426431b332602a49ead257bd3");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // CosineCoin: starting difficulty is 1 / 2^12
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
@@ -1314,7 +1314,7 @@ int64 static GetBlockValue(int nHeight, int64 nFees) {
 	int64 nSubsidy = 0;
 	
 	if(nHeight == 1) {
-		nSubsidy = 35000;
+		nSubsidy = 35000 * COIN;
 	}
 	else if(nHeight > offset && nHeight - offset <= max) {
 		double cosine = 2.0 - (rad*rad)/2.0 + (rad*rad*rad*rad)/24.0 - (rad*rad*rad*rad*rad*rad)/720.0 + (rad*rad*rad*rad*rad*rad*rad*rad)/40320.0;
@@ -3175,7 +3175,7 @@ bool InitBlockIndex() {
         txNew.vout.resize(1);
         txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
         txNew.vout[0].nValue = 0;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("76a91475347d58d0041f7d1393172ede454308fe59c98588ac") << OP_CHECKSIG;
+        txNew.vout[0].scriptPubKey = CScript() << ParseHex("76a91470c4ddd5bcce68cdd18d80639cda500da9dd399c88ac") << OP_CHECKSIG;
         CBlock block;
         block.vtx.push_back(txNew);
         block.hashPrevBlock = 0;
@@ -3183,7 +3183,7 @@ bool InitBlockIndex() {
         block.nVersion = 1;
         block.nTime    = 1391468989;
         block.nBits    = 0x1e0ffff0;
-        block.nNonce   = 2086071117;
+        block.nNonce   = 2088326808;
 		
         if (fTestNet)
         {
@@ -3197,7 +3197,7 @@ bool InitBlockIndex() {
         printf("%s\n", hashGenesisBlock.ToString().c_str());
         printf("%s\n", block.hashMerkleRoot.ToString().c_str());
 		
-        assert(block.hashMerkleRoot == uint256("0x48bb4587aad97225b69531573ca051d913aacd7b51627fded2b1d08936407a3b"));
+        assert(block.hashMerkleRoot == uint256("0x58f028dfc13cfedcd8fc62f4215296fe2941e7fd5514d41bb6045551c0e4c511"));
 		
 		// If genesis block hash does not match, then generate new genesis hash.
         if (true && block.GetHash() != hashGenesisBlock)
