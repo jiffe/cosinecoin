@@ -28,28 +28,21 @@ namespace Checkpoints
         double fTransactionsPerDay;
     };
 
-    // What makes a good checkpoint block?
-    // + Is surrounded by blocks with reasonable timestamps
-    //   (no blocks before with a timestamp after, none after with
-    //    timestamp before)
-    // + Contains no strange transactions
-    static MapCheckpoints mapCheckpoints =
-        boost::assign::map_list_of
-        (  0, uint256("0xe2f2be7bd62c28ab35d988b593eff8ed011298f67c31773a1103f46f098f0f55"))
-        ;
-    static const CCheckpointData data = {
-        &mapCheckpoints,
-        1383887110, // * UNIX timestamp of last checkpoint block
-        2179203,    // * total number of transactions between genesis and last checkpoint
-                    //   (the tx=... number in the SetBestChain debug.log lines)
-        8000.0     // * estimated number of transactions per day after checkpoint
-    };
+    // Checkpointing block 1
+	static MapCheckpoints mapCheckpoints =
+		boost::assign::map_list_of
+		( 1, uint256("0x4d1ae1535f94f26b342c4f7e8e1976d9755fb2fcf598390e15992b2b339af652") );
+	static const CCheckpointData data = {
+		&mapCheckpoints,
+		1383887110, // * UNIX timestamp of last checkpoint block
+		1,          // * total number of transactions between genesis and last checkpoint
+		            //   (the tx=... number in the SetBestChain debug.log lines)
+		8000.0      // * estimated number of transactions per day after checkpoint
+	};
 
     static MapCheckpoints mapCheckpointsTestnet = 
         boost::assign::map_list_of
-        (   546, uint256("000000002a936ca763904c3c35fce2f3556c559c0214345d31b1bcebf76acb70"))
-        ( 35000, uint256("2af959ab4f12111ce947479bfcef16702485f04afd95210aa90fde7d1e4a64ad"))
-        ;
+        ( 546, uint256("000000002a936ca763904c3c35fce2f3556c559c0214345d31b1bcebf76acb70") );
     static const CCheckpointData dataTestnet = {
         &mapCheckpointsTestnet,
         1369685559,
@@ -64,8 +57,7 @@ namespace Checkpoints
             return data;
     }
 
-    bool CheckBlock(int nHeight, const uint256& hash)
-    {
+    bool CheckBlock(int nHeight, const uint256& hash) {
         if (fTestNet) return true; // Testnet has no checkpoints
         if (!GetBoolArg("-checkpoints", true))
             return true;
@@ -74,7 +66,11 @@ namespace Checkpoints
 
         MapCheckpoints::const_iterator i = checkpoints.find(nHeight);
         if (i == checkpoints.end()) return true;
-        return hash == i->second;
+		uint256 hash2 = Hash(BEGIN(hash), END(hash));
+		
+		std::cout << "Comparing " << hash2.GetHex() << " to " << i->second.GetHex() << std::endl;
+		
+        return hash2 == i->second;
     }
 
     // Guess how far we are in the verification process at the given block index
@@ -108,8 +104,7 @@ namespace Checkpoints
         return fWorkBefore / (fWorkBefore + fWorkAfter);
     }
 
-    int GetTotalBlocksEstimate()
-    {
+    int GetTotalBlocksEstimate() {
         if (fTestNet) return 0; // Testnet has no checkpoints
         if (!GetBoolArg("-checkpoints", true))
             return 0;
@@ -119,8 +114,7 @@ namespace Checkpoints
         return checkpoints.rbegin()->first;
     }
 
-    CBlockIndex* GetLastCheckpoint(const std::map<uint256, CBlockIndex*>& mapBlockIndex)
-    {
+    CBlockIndex* GetLastCheckpoint(const std::map<uint256, CBlockIndex*>& mapBlockIndex) {
         if (fTestNet) return NULL; // Testnet has no checkpoints
         if (!GetBoolArg("-checkpoints", true))
             return NULL;
@@ -136,4 +130,6 @@ namespace Checkpoints
         }
         return NULL;
     }
+	
+	
 }
