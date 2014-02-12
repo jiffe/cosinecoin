@@ -60,8 +60,8 @@ void RPCTypeCheck(const Array& params, const list<Value_type>& typesExpected, bo
         const Value& v = params[i];
         if (!((v.type() == t) || (fAllowNull && (v.type() == null_type))))
         {
-            string err = strprintf("Expected type %s, got %s",
-                                   Value_type_name[t], Value_type_name[v.type()]);
+            //string err = strprintf("Expected type %s, got %s", Value_type_name[t], Value_type_name[v.type()]);
+			string err = "Wrong JSON type";
             throw JSONRPCError(RPC_TYPE_ERROR, err);
         }
         i++;
@@ -78,8 +78,8 @@ void RPCTypeCheck(const Object& o, const map<string, Value_type>& typesExpected,
 
         if (!((v.type() == t.second) || (fAllowNull && (v.type() == null_type))))
         {
-            string err = strprintf("Expected type %s for %s, got %s",
-                                   Value_type_name[t.second], t.first.c_str(), Value_type_name[v.type()]);
+            //string err = strprintf("Expected type %s for %s, got %s", Value_type_name[t.second], t.first.c_str(), Value_type_name[v.type()]);
+			string err = "Wrong JSON type";
             throw JSONRPCError(RPC_TYPE_ERROR, err);
         }
     }
