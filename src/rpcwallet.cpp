@@ -80,12 +80,16 @@ string AccountFromValue(const Value& value) {
 *
 *
 ***************************************************************************************************/
-Value getinfo(const Array& params, bool fHelp) {
+Value getinfo(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getinfo\n"
             "Returns an object containing various state info.");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     proxyType proxy;
     GetProxy(NET_IPV4, proxy);
 
@@ -119,19 +123,23 @@ Value getinfo(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value getnewaddress(const Array& params, bool fHelp) {
+Value getnewaddress(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "getnewaddress [account]\n"
             "Returns a new CosineCoin address for receiving payments.  "
             "If [account] is specified (recommended), it is added to the address book "
             "so payments received with the address will be credited to [account].");
-
+	
     // Parse the account first so we don't generate a key if there's an error
     string strAccount;
     if (params.size() > 0)
         strAccount = AccountFromValue(params[0]);
-
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READWRITE)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     if (!pwalletMain->IsLocked())
         pwalletMain->TopUpKeyPool();
 
@@ -193,15 +201,19 @@ CBitcoinAddress GetAccountAddress(string strAccount, bool bForceNew=false) {
 *
 *
 ***************************************************************************************************/
-Value getaccountaddress(const Array& params, bool fHelp) {
+Value getaccountaddress(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getaccountaddress <account>\n"
             "Returns the current CosineCoin address for receiving payments to this account.");
-
+	
     // Parse the account first so we don't generate a key if there's an error
     string strAccount = AccountFromValue(params[0]);
-
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READONLY)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     Value ret;
 
     ret = GetAccountAddress(strAccount).ToString();
@@ -214,21 +226,34 @@ Value getaccountaddress(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value setaccount(const Array& params, bool fHelp) {
+Value setaccount(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "setaccount <cosinecoinaddress> <account>\n"
             "Sets the account associated with the given address.");
-
+	
     CBitcoinAddress address(params[0].get_str());
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid CosineCoin address");
-
+	
+    map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
+    if(mi != pwalletMain->mapAddressBook.end()) {
+		if(!user.checkAccount((*mi).second, ACL_ACCOUNT_READWRITE)) {
+			throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+		}
+	}
+	else {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Not bound to an account!");
+	}
 
     string strAccount;
     if (params.size() > 1)
         strAccount = AccountFromValue(params[1]);
-
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READWRITE)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     // Detect when changing the account of an address that is the 'unused current key' of another account:
     if (pwalletMain->mapAddressBook.count(address.Get()))
     {
@@ -247,20 +272,25 @@ Value setaccount(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value getaccount(const Array& params, bool fHelp) {
+Value getaccount(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getaccount <cosinecoinaddress>\n"
             "Returns the account associated with the given address.");
-
+	
     CBitcoinAddress address(params[0].get_str());
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid CosineCoin address");
-
+	
     string strAccount;
     map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
-    if (mi != pwalletMain->mapAddressBook.end() && !(*mi).second.empty())
+    if (mi != pwalletMain->mapAddressBook.end()) {
         strAccount = (*mi).second;
+		if(!user.checkAccount(strAccount, ACL_ACCOUNT_READONLY)) {
+			throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+		}
+	}
+	
     return strAccount;
 }
 
@@ -269,18 +299,21 @@ Value getaccount(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value getaddressesbyaccount(const Array& params, bool fHelp) {
+Value getaddressesbyaccount(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getaddressesbyaccount <account>\n"
             "Returns the list of addresses for the given account.");
-
+	
     string strAccount = AccountFromValue(params[0]);
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READONLY)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
 
     // Find all addresses that have the given account
     Array ret;
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
-    {
+    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook) {
         const CBitcoinAddress& address = item.first;
         const string& strName = item.second;
         if (strName == strAccount)
@@ -294,12 +327,16 @@ Value getaddressesbyaccount(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value setmininput(const Array& params, bool fHelp) {
+Value setmininput(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 1)
         throw runtime_error(
             "setmininput <amount>\n"
             "<amount> is a real and is rounded to the nearest 0.00000001");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     // Amount
     int64 nAmount = 0;
     if (params[0].get_real() != 0.0)
@@ -314,13 +351,17 @@ Value setmininput(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value sendtoaddress(const Array& params, bool fHelp) {
+Value sendtoaddress(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 2 || params.size() > 4)
         throw runtime_error(
             "sendtoaddress <cosinecoinaddress> <amount> [comment] [comment-to]\n"
             "<amount> is a real and is rounded to the nearest 0.00000001"
             + HelpRequiringPassphrase());
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     CBitcoinAddress address(params[0].get_str());
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid CosineCoin address");
@@ -350,14 +391,18 @@ Value sendtoaddress(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value listaddressgroupings(const Array& params, bool fHelp) {
+Value listaddressgroupings(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp)
         throw runtime_error(
             "listaddressgroupings\n"
             "Lists groups of addresses which have had their common ownership\n"
             "made public by common use as inputs or as the resulting change\n"
             "in past transactions");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     Array jsonGroupings;
     map<CTxDestination, int64> balances = pwalletMain->GetAddressBalances();
     BOOST_FOREACH(set<CTxDestination> grouping, pwalletMain->GetAddressGroupings())
@@ -385,12 +430,12 @@ Value listaddressgroupings(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value signmessage(const Array& params, bool fHelp) {
+Value signmessage(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 2)
         throw runtime_error(
             "signmessage <cosinecoinaddress> <message>\n"
             "Sign a message with the private key of an address");
-
+	
     EnsureWalletIsUnlocked();
 
     string strAddress = params[0].get_str();
@@ -399,7 +444,17 @@ Value signmessage(const Array& params, bool fHelp) {
     CBitcoinAddress addr(strAddress);
     if (!addr.IsValid())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-
+	
+    map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(addr.Get());
+    if(mi != pwalletMain->mapAddressBook.end()) {
+		if(!user.checkAccount((*mi).second, ACL_ACCOUNT_READONLY)) {
+			throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+		}
+	}
+	else {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Not bound to an account!");
+	}
+	
     CKeyID keyID;
     if (!addr.GetKeyID(keyID))
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
@@ -424,12 +479,16 @@ Value signmessage(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value verifymessage(const Array& params, bool fHelp) {
+Value verifymessage(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 3)
         throw runtime_error(
             "verifymessage <cosinecoinaddress> <signature> <message>\n"
             "Verify a signed message");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     string strAddress  = params[0].get_str();
     string strSign     = params[1].get_str();
     string strMessage  = params[2].get_str();
@@ -464,17 +523,28 @@ Value verifymessage(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value getreceivedbyaddress(const Array& params, bool fHelp) {
+Value getreceivedbyaddress(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "getreceivedbyaddress <cosinecoinaddress> [minconf=1]\n"
             "Returns the total amount received by <cosinecoinaddress> in transactions with at least [minconf] confirmations.");
-
+	
     // Bitcoin address
     CBitcoinAddress address = CBitcoinAddress(params[0].get_str());
     CScript scriptPubKey;
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid CosineCoin address");
+	
+    map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
+    if(mi != pwalletMain->mapAddressBook.end()) {
+		if(!user.checkAccount((*mi).second, ACL_ACCOUNT_READONLY)) {
+			throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+		}
+	}
+	else {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Not bound to an account!");
+	}
+	
     scriptPubKey.SetDestination(address.Get());
     if (!IsMine(*pwalletMain,scriptPubKey))
         return (double)0.0;
@@ -521,12 +591,12 @@ void GetAccountAddresses(string strAccount, set<CTxDestination>& setAddress) {
 *
 *
 ***************************************************************************************************/
-Value getreceivedbyaccount(const Array& params, bool fHelp) {
+Value getreceivedbyaccount(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "getreceivedbyaccount <account> [minconf=1]\n"
             "Returns the total amount received by addresses with <account> in transactions with at least [minconf] confirmations.");
-
+	
     // Minimum confirmations
     int nMinDepth = 1;
     if (params.size() > 1)
@@ -534,6 +604,11 @@ Value getreceivedbyaccount(const Array& params, bool fHelp) {
 
     // Get the set of pub keys assigned to account
     string strAccount = AccountFromValue(params[0]);
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READONLY)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     set<CTxDestination> setAddress;
     GetAccountAddresses(strAccount, setAddress);
 
@@ -601,13 +676,13 @@ int64 GetAccountBalance(const string& strAccount, int nMinDepth) {
 *
 *
 ***************************************************************************************************/
-Value getbalance(const Array& params, bool fHelp) {
+Value getbalance(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 2)
         throw runtime_error(
             "getbalance [account] [minconf=1]\n"
             "If [account] is not specified, returns the server's total available balance.\n"
             "If [account] is specified, returns the balance in the account.");
-
+	
     if (params.size() == 0)
         return  ValueFromAmount(pwalletMain->GetBalance());
 
@@ -616,6 +691,11 @@ Value getbalance(const Array& params, bool fHelp) {
         nMinDepth = params[1].get_int();
 
     if (params[0].get_str() == "*") {
+		
+		if(!user.check(ACL_GLOBAL)) {
+			throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+		}
+		
         // Calculate total balance a different way from GetBalance()
         // (GetBalance() sums up all unspent TxOuts)
         // getbalance and getbalance '*' 0 should return the same number
@@ -644,6 +724,10 @@ Value getbalance(const Array& params, bool fHelp) {
     }
 
     string strAccount = AccountFromValue(params[0]);
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READONLY)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
 
     int64 nBalance = GetAccountBalance(strAccount, nMinDepth);
 
@@ -655,14 +739,19 @@ Value getbalance(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value movecmd(const Array& params, bool fHelp) {
+Value movecmd(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 3 || params.size() > 5)
         throw runtime_error(
             "move <fromaccount> <toaccount> <amount> [minconf=1] [comment]\n"
             "Move from one account in your wallet to another.");
-
+	
     string strFrom = AccountFromValue(params[0]);
     string strTo = AccountFromValue(params[1]);
+	
+	if(!user.checkAccount(strFrom, ACL_ACCOUNT_READWRITE) || !user.checkAccount(strTo, ACL_ACCOUNT_READWRITE)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     int64 nAmount = AmountFromValue(params[2]);
     if (params.size() > 3)
         // unused parameter, used to be nMinDepth, keep type-checking it though
@@ -708,14 +797,19 @@ Value movecmd(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value sendfrom(const Array& params, bool fHelp) {
+Value sendfrom(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 3 || params.size() > 6)
         throw runtime_error(
             "sendfrom <fromaccount> <tocosinecoinaddress> <amount> [minconf=1] [comment] [comment-to]\n"
             "<amount> is a real and is rounded to the nearest 0.00000001"
             + HelpRequiringPassphrase());
-
+	
     string strAccount = AccountFromValue(params[0]);
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READWRITE)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     CBitcoinAddress address(params[1].get_str());
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid CosineCoin address");
@@ -751,14 +845,19 @@ Value sendfrom(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value sendmany(const Array& params, bool fHelp) {
+Value sendmany(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 2 || params.size() > 4)
         throw runtime_error(
             "sendmany <fromaccount> {address:amount,...} [minconf=1] [comment]\n"
             "amounts are double-precision floating point numbers"
             + HelpRequiringPassphrase());
-
+	
     string strAccount = AccountFromValue(params[0]);
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READWRITE)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     Object sendTo = params[1].get_obj();
     int nMinDepth = 1;
     if (params.size() > 2)
@@ -873,9 +972,8 @@ static CScript _createmultisig(const Array& params) {
 *
 *
 ***************************************************************************************************/
-Value addmultisigaddress(const Array& params, bool fHelp) {
-    if (fHelp || params.size() < 2 || params.size() > 3)
-    {
+Value addmultisigaddress(const Array& params, bool fHelp, CACLUser &user) {
+    if (fHelp || params.size() < 2 || params.size() > 3) {
         string msg = "addmultisigaddress <nrequired> <'[\"key\",\"key\"]'> [account]\n"
             "Add a nrequired-to-sign multisignature address to the wallet\"\n"
             "each key is a CosineCoin address or hex-encoded public key\n"
@@ -886,7 +984,11 @@ Value addmultisigaddress(const Array& params, bool fHelp) {
     string strAccount;
     if (params.size() > 2)
         strAccount = AccountFromValue(params[2]);
-
+	
+	if(!user.checkAccount(strAccount, ACL_ACCOUNT_READWRITE)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     // Construct using pay-to-script-hash:
     CScript inner = _createmultisig(params);
     CScriptID innerID = inner.GetID();
@@ -901,9 +1003,8 @@ Value addmultisigaddress(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value createmultisig(const Array& params, bool fHelp) {
-    if (fHelp || params.size() < 2 || params.size() > 2)
-    {
+Value createmultisig(const Array& params, bool fHelp, CACLUser &user) {
+    if(fHelp || params.size() < 2 || params.size() > 2) {
         string msg = "createmultisig <nrequired> <'[\"key\",\"key\"]'>\n"
             "Creates a multi-signature address and returns a json object\n"
             "with keys:\n"
@@ -911,6 +1012,10 @@ Value createmultisig(const Array& params, bool fHelp) {
             "redeemScript : hex-encoded redemption script";
         throw runtime_error(msg);
     }
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
 
     // Construct using pay-to-script-hash:
     CScript inner = _createmultisig(params);
@@ -941,7 +1046,7 @@ struct tallyitem {
 *
 *
 ***************************************************************************************************/
-Value ListReceived(const Array& params, bool fByAccounts) {
+Value ListReceived(const Array& params, bool fByAccounts, CACLUser &user) {
     // Minimum confirmations
     int nMinDepth = 1;
     if (params.size() > 0)
@@ -985,6 +1090,11 @@ Value ListReceived(const Array& params, bool fByAccounts) {
     {
         const CBitcoinAddress& address = item.first;
         const string& strAccount = item.second;
+		
+		if(!user.checkAccount(strAccount, ACL_ACCOUNT_READONLY)) {
+			continue;
+		}
+		
         map<CBitcoinAddress, tallyitem>::iterator it = mapTally.find(address);
         if (it == mapTally.end() && !fIncludeEmpty)
             continue;
@@ -1025,8 +1135,11 @@ Value ListReceived(const Array& params, bool fByAccounts) {
 
     if (fByAccounts)
     {
-        for (map<string, tallyitem>::iterator it = mapAccountTally.begin(); it != mapAccountTally.end(); ++it)
-        {
+        for (map<string, tallyitem>::iterator it = mapAccountTally.begin(); it != mapAccountTally.end(); ++it) {
+			if(!user.checkAccount((*it).first, ACL_ACCOUNT_READONLY)) {
+				continue;
+			}
+		
             int64 nAmount = (*it).second.nAmount;
             int nConf = (*it).second.nConf;
             Object obj;
@@ -1045,7 +1158,7 @@ Value ListReceived(const Array& params, bool fByAccounts) {
 *
 *
 ***************************************************************************************************/
-Value listreceivedbyaddress(const Array& params, bool fHelp) {
+Value listreceivedbyaddress(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 2)
         throw runtime_error(
             "listreceivedbyaddress [minconf=1] [includeempty=false]\n"
@@ -1057,8 +1170,8 @@ Value listreceivedbyaddress(const Array& params, bool fHelp) {
             "  \"amount\" : total amount received by the address\n"
             "  \"confirmations\" : number of confirmations of the most recent transaction included\n"
             "  \"txids\" : list of transactions with outputs to the address\n");
-
-    return ListReceived(params, false);
+	
+    return ListReceived(params, false, user);
 }
 
 
@@ -1066,7 +1179,7 @@ Value listreceivedbyaddress(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value listreceivedbyaccount(const Array& params, bool fHelp) {
+Value listreceivedbyaccount(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 2)
         throw runtime_error(
             "listreceivedbyaccount [minconf=1] [includeempty=false]\n"
@@ -1076,8 +1189,8 @@ Value listreceivedbyaccount(const Array& params, bool fHelp) {
             "  \"account\" : the account of the receiving addresses\n"
             "  \"amount\" : total amount received by addresses with this account\n"
             "  \"confirmations\" : number of confirmations of the most recent transaction included");
-
-    return ListReceived(params, true);
+	
+    return ListReceived(params, true, user);
 }
 
 
@@ -1169,15 +1282,24 @@ void AcentryToJSON(const CAccountingEntry& acentry, const string& strAccount, Ar
 *
 *
 ***************************************************************************************************/
-Value listtransactions(const Array& params, bool fHelp) {
+Value listtransactions(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 3)
         throw runtime_error(
             "listtransactions [account] [count=10] [from=0]\n"
             "Returns up to [count] most recent transactions skipping the first [from] transactions for account [account].");
-
+	
     string strAccount = "*";
-    if (params.size() > 0)
+    if (params.size() > 0) {
         strAccount = params[0].get_str();
+		if(!user.checkAccount(strAccount, ACL_ACCOUNT_READONLY)) {
+			throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+		}
+	}
+	else {
+		if(!user.check(ACL_GLOBAL)) {
+			throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+		}
+	}
     int nCount = 10;
     if (params.size() > 1)
         nCount = params[1].get_int();
@@ -1231,12 +1353,12 @@ Value listtransactions(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value listaccounts(const Array& params, bool fHelp) {
+Value listaccounts(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "listaccounts [minconf=1]\n"
             "Returns Object that has account names as keys, account balances as values.");
-
+	
     int nMinDepth = 1;
     if (params.size() > 0)
         nMinDepth = params[0].get_int();
@@ -1275,6 +1397,9 @@ Value listaccounts(const Array& params, bool fHelp) {
 
     Object ret;
     BOOST_FOREACH(const PAIRTYPE(string, int64)& accountBalance, mapAccountBalances) {
+		if(!user.checkAccount(accountBalance.first, ACL_ACCOUNT_READONLY)) {
+			continue;
+		}
         ret.push_back(Pair(accountBalance.first, ValueFromAmount(accountBalance.second)));
     }
     return ret;
@@ -1285,12 +1410,16 @@ Value listaccounts(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value listsinceblock(const Array& params, bool fHelp) {
+Value listsinceblock(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp)
         throw runtime_error(
             "listsinceblock [blockhash] [target-confirmations]\n"
             "Get all transactions in blocks since block [blockhash], or all transactions if omitted");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     CBlockIndex *pindex = NULL;
     int target_confirms = 1;
 
@@ -1352,12 +1481,16 @@ Value listsinceblock(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value gettransaction(const Array& params, bool fHelp) {
+Value gettransaction(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "gettransaction <txid>\n"
             "Get detailed information about in-wallet transaction <txid>");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     uint256 hash;
     hash.SetHex(params[0].get_str());
 
@@ -1389,12 +1522,16 @@ Value gettransaction(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value backupwallet(const Array& params, bool fHelp) {
+Value backupwallet(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "backupwallet <destination>\n"
             "Safely copies wallet.dat to destination, which can be a directory or a path with filename.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     string strDest = params[0].get_str();
     if (!BackupWallet(*pwalletMain, strDest))
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: Wallet backup failed!");
@@ -1407,13 +1544,17 @@ Value backupwallet(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value keypoolrefill(const Array& params, bool fHelp) {
+Value keypoolrefill(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 0)
         throw runtime_error(
             "keypoolrefill\n"
             "Fills the keypool."
             + HelpRequiringPassphrase());
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     EnsureWalletIsUnlocked();
 
     pwalletMain->TopUpKeyPool();
@@ -1489,13 +1630,18 @@ void ThreadCleanWalletPassphrase(void* parg) {
 *
 *
 ***************************************************************************************************/
-Value walletpassphrase(const Array& params, bool fHelp) {
+Value walletpassphrase(const Array& params, bool fHelp, CACLUser &user) {
     if (pwalletMain->IsCrypted() && (fHelp || params.size() != 2))
         throw runtime_error(
             "walletpassphrase <passphrase> <timeout>\n"
             "Stores the wallet decryption key in memory for <timeout> seconds.");
     if (fHelp)
         return true;
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     if (!pwalletMain->IsCrypted())
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted wallet, but walletpassphrase was called.");
 
@@ -1531,13 +1677,18 @@ Value walletpassphrase(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value walletpassphrasechange(const Array& params, bool fHelp) {
+Value walletpassphrasechange(const Array& params, bool fHelp, CACLUser &user) {
     if (pwalletMain->IsCrypted() && (fHelp || params.size() != 2))
         throw runtime_error(
             "walletpassphrasechange <oldpassphrase> <newpassphrase>\n"
             "Changes the wallet passphrase from <oldpassphrase> to <newpassphrase>.");
     if (fHelp)
         return true;
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     if (!pwalletMain->IsCrypted())
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted wallet, but walletpassphrasechange was called.");
 
@@ -1567,7 +1718,7 @@ Value walletpassphrasechange(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value walletlock(const Array& params, bool fHelp) {
+Value walletlock(const Array& params, bool fHelp, CACLUser &user) {
     if (pwalletMain->IsCrypted() && (fHelp || params.size() != 0))
         throw runtime_error(
             "walletlock\n"
@@ -1576,6 +1727,11 @@ Value walletlock(const Array& params, bool fHelp) {
             "before being able to call any methods which require the wallet to be unlocked.");
     if (fHelp)
         return true;
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     if (!pwalletMain->IsCrypted())
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted wallet, but walletlock was called.");
 
@@ -1593,13 +1749,18 @@ Value walletlock(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value encryptwallet(const Array& params, bool fHelp) {
+Value encryptwallet(const Array& params, bool fHelp, CACLUser &user) {
     if (!pwalletMain->IsCrypted() && (fHelp || params.size() != 1))
         throw runtime_error(
             "encryptwallet <passphrase>\n"
             "Encrypts the wallet with <passphrase>.");
     if (fHelp)
         return true;
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     if (pwalletMain->IsCrypted())
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an encrypted wallet, but encryptwallet was called.");
 
@@ -1664,17 +1825,24 @@ public:
 *
 *
 ***************************************************************************************************/
-Value validateaddress(const Array& params, bool fHelp) {
+Value validateaddress(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "validateaddress <cosinecoinaddress>\n"
             "Return information about <cosinecoinaddress>.");
-
+	
     CBitcoinAddress address(params[0].get_str());
     bool isValid = address.IsValid();
 
     Object ret;
     ret.push_back(Pair("isvalid", isValid));
+	
+    map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
+    if(mi != pwalletMain->mapAddressBook.end()) {
+		if(user.checkAccount((*mi).second, ACL_ACCOUNT_READONLY)) {
+			throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+		}
+	}
     if (isValid)
     {
         CTxDestination dest = address.Get();
@@ -1682,12 +1850,18 @@ Value validateaddress(const Array& params, bool fHelp) {
         ret.push_back(Pair("address", currentAddress));
         bool fMine = pwalletMain ? IsMine(*pwalletMain, dest) : false;
         ret.push_back(Pair("ismine", fMine));
-        if (fMine) {
-            Object detail = boost::apply_visitor(DescribeAddressVisitor(), dest);
-            ret.insert(ret.end(), detail.begin(), detail.end());
-        }
-        if (pwalletMain && pwalletMain->mapAddressBook.count(dest))
-            ret.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
+		map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
+		if(mi != pwalletMain->mapAddressBook.end()) {
+			if(user.checkAccount((*mi).second, ACL_ACCOUNT_READONLY)) {
+				if (fMine) {
+					Object detail = boost::apply_visitor(DescribeAddressVisitor(), dest);
+					ret.insert(ret.end(), detail.begin(), detail.end());
+				}
+				if (pwalletMain && pwalletMain->mapAddressBook.count(dest))
+					ret.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
+			}
+		}
+        
     }
     return ret;
 }
@@ -1697,12 +1871,16 @@ Value validateaddress(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value lockunspent(const Array& params, bool fHelp) {
+Value lockunspent(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "lockunspent unlock? [array-of-Objects]\n"
             "Updates list of temporarily unspendable outputs.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     if (params.size() == 1)
         RPCTypeCheck(params, list_of(bool_type));
     else
@@ -1749,12 +1927,16 @@ Value lockunspent(const Array& params, bool fHelp) {
 *
 *
 ***************************************************************************************************/
-Value listlockunspent(const Array& params, bool fHelp) {
+Value listlockunspent(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 0)
         throw runtime_error(
             "listlockunspent\n"
             "Returns list of temporarily unspendable outputs.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     vector<COutPoint> vOutpts;
     pwalletMain->ListLockedCoins(vOutpts);
 

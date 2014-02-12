@@ -8,19 +8,23 @@
 using namespace json_spirit;
 using namespace std;
 
-Value getconnectioncount(const Array& params, bool fHelp)
-{
+
+Value getconnectioncount(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getconnectioncount\n"
             "Returns the number of connections to other nodes.");
-
+	
+	if(!user.check(ACL_PEERREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     LOCK(cs_vNodes);
     return (int)vNodes.size();
 }
 
-static void CopyNodeStats(std::vector<CNodeStats>& vstats)
-{
+
+static void CopyNodeStats(std::vector<CNodeStats>& vstats) {
     vstats.clear();
 
     LOCK(cs_vNodes);
@@ -32,13 +36,17 @@ static void CopyNodeStats(std::vector<CNodeStats>& vstats)
     }
 }
 
-Value getpeerinfo(const Array& params, bool fHelp)
-{
+
+Value getpeerinfo(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getpeerinfo\n"
             "Returns data about each connected network node.");
-
+	
+	if(!user.check(ACL_PEERREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     vector<CNodeStats> vstats;
     CopyNodeStats(vstats);
 
@@ -72,8 +80,8 @@ Value getpeerinfo(const Array& params, bool fHelp)
     return ret;
 }
 
-Value addnode(const Array& params, bool fHelp)
-{
+
+Value addnode(const Array& params, bool fHelp, CACLUser &user) {
     string strCommand;
     if (params.size() == 2)
         strCommand = params[1].get_str();
@@ -82,7 +90,11 @@ Value addnode(const Array& params, bool fHelp)
         throw runtime_error(
             "addnode <node> <add|remove|onetry>\n"
             "Attempts add or remove <node> from the addnode list or try a connection to <node> once.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     string strNode = params[0].get_str();
 
     if (strCommand == "onetry")
@@ -114,8 +126,8 @@ Value addnode(const Array& params, bool fHelp)
     return Value::null;
 }
 
-Value getaddednodeinfo(const Array& params, bool fHelp)
-{
+
+Value getaddednodeinfo(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "getaddednodeinfo <dns> [node]\n"
@@ -123,7 +135,11 @@ Value getaddednodeinfo(const Array& params, bool fHelp)
             "(note that onetry addnodes are not listed here)\n"
             "If dns is false, only a list of added nodes will be provided,\n"
             "otherwise connected information will also be available.");
-
+	
+	if(!user.check(ACL_PEERREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     bool fDns = params[0].get_bool();
 
     list<string> laddedNodes(0);

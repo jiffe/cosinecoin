@@ -6,13 +6,15 @@
 #include "main.h"
 #include "bitcoinrpc.h"
 
+
 using namespace json_spirit;
 using namespace std;
 
+
 void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out);
 
-double GetDifficulty(const CBlockIndex* blockindex)
-{
+
+double GetDifficulty(const CBlockIndex* blockindex) {
     // Floating point number that is a multiple of the minimum difficulty,
     // minimum difficulty = 1.0.
     if (blockindex == NULL)
@@ -43,8 +45,7 @@ double GetDifficulty(const CBlockIndex* blockindex)
 }
 
 
-Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex)
-{
+Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex) {
     Object result;
     result.push_back(Pair("hash", block.GetHash().GetHex()));
     CMerkleTx txGen(block.vtx[0]);
@@ -71,44 +72,58 @@ Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex)
 }
 
 
-Value getblockcount(const Array& params, bool fHelp)
-{
+Value getblockcount(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getblockcount\n"
             "Returns the number of blocks in the longest block chain.");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     return nBestHeight;
 }
 
-Value getbestblockhash(const Array& params, bool fHelp)
-{
+
+Value getbestblockhash(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getbestblockhash\n"
             "Returns the hash of the best (tip) block in the longest block chain.");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     return hashBestChain.GetHex();
 }
 
-Value getdifficulty(const Array& params, bool fHelp)
-{
+
+Value getdifficulty(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getdifficulty\n"
             "Returns the proof-of-work difficulty as a multiple of the minimum difficulty.");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     return GetDifficulty();
 }
 
 
-Value settxfee(const Array& params, bool fHelp)
-{
+Value settxfee(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 1)
         throw runtime_error(
             "settxfee <amount>\n"
             "<amount> is a real and is rounded to the nearest 0.00000001");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     // Amount
     int64 nAmount = 0;
     if (params[0].get_real() != 0.0)
@@ -118,13 +133,17 @@ Value settxfee(const Array& params, bool fHelp)
     return true;
 }
 
-Value getrawmempool(const Array& params, bool fHelp)
-{
+
+Value getrawmempool(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getrawmempool\n"
             "Returns all transaction ids in memory pool.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     vector<uint256> vtxid;
     mempool.queryHashes(vtxid);
 
@@ -135,13 +154,17 @@ Value getrawmempool(const Array& params, bool fHelp)
     return a;
 }
 
-Value getblockhash(const Array& params, bool fHelp)
-{
+
+Value getblockhash(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getblockhash <index>\n"
             "Returns hash of block in best-block-chain at <index>.");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     int nHeight = params[0].get_int();
     if (nHeight < 0 || nHeight > nBestHeight)
         throw runtime_error("Block number out of range.");
@@ -150,15 +173,19 @@ Value getblockhash(const Array& params, bool fHelp)
     return pblockindex->phashBlock->GetHex();
 }
 
-Value getblock(const Array& params, bool fHelp)
-{
+
+Value getblock(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "getblock <hash> [verbose=true]\n"
             "If verbose is false, returns a string that is serialized, hex-encoded data for block <hash>.\n"
             "If verbose is true, returns an Object with information about block <hash>."
         );
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     std::string strHash = params[0].get_str();
     uint256 hash(strHash);
 
@@ -184,13 +211,17 @@ Value getblock(const Array& params, bool fHelp)
     return blockToJSON(block, pblockindex);
 }
 
-Value gettxoutsetinfo(const Array& params, bool fHelp)
-{
+
+Value gettxoutsetinfo(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "gettxoutsetinfo\n"
             "Returns statistics about the unspent transaction output set.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     Object ret;
 
     CCoinsStats stats;
@@ -206,13 +237,17 @@ Value gettxoutsetinfo(const Array& params, bool fHelp)
     return ret;
 }
 
-Value gettxout(const Array& params, bool fHelp)
-{
+
+Value gettxout(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 2 || params.size() > 3)
         throw runtime_error(
             "gettxout <txid> <n> [includemempool=true]\n"
             "Returns details about an unspent transaction output.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     Object ret;
 
     std::string strHash = params[0].get_str();
@@ -251,13 +286,17 @@ Value gettxout(const Array& params, bool fHelp)
     return ret;
 }
 
-Value verifychain(const Array& params, bool fHelp)
-{
+
+Value verifychain(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 2)
         throw runtime_error(
             "verifychain [check level] [num blocks]\n"
             "Verifies blockchain database.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     int nCheckLevel = GetArg("-checklevel", 3);
     int nCheckDepth = GetArg("-checkblocks", 288);
     if (params.size() > 0)

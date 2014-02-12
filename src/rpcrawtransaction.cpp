@@ -22,8 +22,7 @@ using namespace json_spirit;
 // Utilities: convert hex-encoded Values
 // (throws error if not hex).
 //
-uint256 ParseHashV(const Value& v, string strName)
-{
+uint256 ParseHashV(const Value& v, string strName) {
     string strHex;
     if (v.type() == str_type)
         strHex = v.get_str();
@@ -33,12 +32,14 @@ uint256 ParseHashV(const Value& v, string strName)
     result.SetHex(strHex);
     return result;
 }
-uint256 ParseHashO(const Object& o, string strKey)
-{
+
+
+uint256 ParseHashO(const Object& o, string strKey) {
     return ParseHashV(find_value(o, strKey), strKey);
 }
-vector<unsigned char> ParseHexV(const Value& v, string strName)
-{
+
+
+vector<unsigned char> ParseHexV(const Value& v, string strName) {
     string strHex;
     if (v.type() == str_type)
         strHex = v.get_str();
@@ -46,13 +47,14 @@ vector<unsigned char> ParseHexV(const Value& v, string strName)
         throw JSONRPCError(RPC_INVALID_PARAMETER, strName+" must be hexadecimal string (not '"+strHex+"')");
     return ParseHex(strHex);
 }
-vector<unsigned char> ParseHexO(const Object& o, string strKey)
-{
+
+
+vector<unsigned char> ParseHexO(const Object& o, string strKey) {
     return ParseHexV(find_value(o, strKey), strKey);
 }
 
-void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
-{
+
+void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out) {
     txnouttype type;
     vector<CTxDestination> addresses;
     int nRequired;
@@ -75,8 +77,8 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
     out.push_back(Pair("addresses", a));
 }
 
-void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
-{
+
+void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry) {
     entry.push_back(Pair("txid", tx.GetHash().GetHex()));
     entry.push_back(Pair("version", tx.nVersion));
     entry.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
@@ -132,8 +134,8 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
     }
 }
 
-Value getrawtransaction(const Array& params, bool fHelp)
-{
+
+Value getrawtransaction(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
             "getrawtransaction <txid> [verbose=0]\n"
@@ -141,7 +143,11 @@ Value getrawtransaction(const Array& params, bool fHelp)
             "serialized, hex-encoded data for <txid>.\n"
             "If verbose is non-zero, returns an Object\n"
             "with information about <txid>.");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     uint256 hash = ParseHashV(params[0], "parameter 1");
 
     bool fVerbose = false;
@@ -166,8 +172,8 @@ Value getrawtransaction(const Array& params, bool fHelp)
     return result;
 }
 
-Value listunspent(const Array& params, bool fHelp)
-{
+
+Value listunspent(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() > 3)
         throw runtime_error(
             "listunspent [minconf=1] [maxconf=9999999]  [\"address\",...]\n"
@@ -176,7 +182,7 @@ Value listunspent(const Array& params, bool fHelp)
             "Optionally filtered to only include txouts paid to specified addresses.\n"
             "Results are an array of Objects, each of which has:\n"
             "{txid, vout, scriptPubKey, amount, confirmations}");
-
+	
     RPCTypeCheck(params, list_of(int_type)(int_type)(array_type));
 
     int nMinDepth = 1;
@@ -194,6 +200,17 @@ Value listunspent(const Array& params, bool fHelp)
         BOOST_FOREACH(Value& input, inputs)
         {
             CBitcoinAddress address(input.get_str());
+			
+			map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
+			if(mi != pwalletMain->mapAddressBook.end()) {
+				if(!user.checkAccount((*mi).second, ACL_ACCOUNT_READONLY)) {
+					continue;
+				}
+			}
+			else {
+				continue;
+			}
+			
             if (!address.IsValid())
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid CosineCoin address: ")+input.get_str());
             if (setAddress.count(address))
@@ -253,8 +270,8 @@ Value listunspent(const Array& params, bool fHelp)
     return results;
 }
 
-Value createrawtransaction(const Array& params, bool fHelp)
-{
+
+Value createrawtransaction(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 2)
         throw runtime_error(
             "createrawtransaction [{\"txid\":txid,\"vout\":n},...] {address:amount,...}\n"
@@ -264,7 +281,11 @@ Value createrawtransaction(const Array& params, bool fHelp)
             "Returns hex-encoded raw transaction.\n"
             "Note that the transaction's inputs are not signed, and\n"
             "it is not stored in the wallet or transmitted to the network.");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     RPCTypeCheck(params, list_of(array_type)(obj_type));
 
     Array inputs = params[0].get_array();
@@ -313,13 +334,17 @@ Value createrawtransaction(const Array& params, bool fHelp)
     return HexStr(ss.begin(), ss.end());
 }
 
-Value decoderawtransaction(const Array& params, bool fHelp)
-{
+
+Value decoderawtransaction(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "decoderawtransaction <hex string>\n"
             "Return a JSON object representing the serialized, hex-encoded transaction.");
-
+	
+	if(!user.check(ACL_PUBLICREAD)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     vector<unsigned char> txData(ParseHexV(params[0], "argument"));
     CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
     CTransaction tx;
@@ -336,8 +361,8 @@ Value decoderawtransaction(const Array& params, bool fHelp)
     return result;
 }
 
-Value signrawtransaction(const Array& params, bool fHelp)
-{
+
+Value signrawtransaction(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 4)
         throw runtime_error(
             "signrawtransaction <hex string> [{\"txid\":txid,\"vout\":n,\"scriptPubKey\":hex,\"redeemScript\":hex},...] [<privatekey1>,...] [sighashtype=\"ALL\"]\n"
@@ -352,7 +377,11 @@ Value signrawtransaction(const Array& params, bool fHelp)
             "  hex : raw transaction with signature(s) (hex-encoded string)\n"
             "  complete : 1 if transaction has a complete set of signature (0 if not)"
             + HelpRequiringPassphrase());
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     RPCTypeCheck(params, list_of(str_type)(array_type)(array_type)(str_type), true);
 
     vector<unsigned char> txData(ParseHexV(params[0], "argument 1"));
@@ -527,13 +556,17 @@ Value signrawtransaction(const Array& params, bool fHelp)
     return result;
 }
 
-Value sendrawtransaction(const Array& params, bool fHelp)
-{
+
+Value sendrawtransaction(const Array& params, bool fHelp, CACLUser &user) {
     if (fHelp || params.size() < 1 || params.size() > 1)
         throw runtime_error(
             "sendrawtransaction <hex string>\n"
             "Submits raw transaction (serialized, hex-encoded) to local node and network.");
-
+	
+	if(!user.check(ACL_GLOBAL)) {
+		throw JSONRPCError(RPC_PERMISSION_DENIED, "Permission denied!");
+	}
+	
     // parse hex string from parameter
     vector<unsigned char> txData(ParseHexV(params[0], "parameter"));
     CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
@@ -572,3 +605,4 @@ Value sendrawtransaction(const Array& params, bool fHelp)
 
     return hashTx.GetHex();
 }
+

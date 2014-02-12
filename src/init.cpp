@@ -9,6 +9,8 @@
 #include "net.h"
 #include "init.h"
 #include "util.h"
+#include "acldb.h"
+#include "aclperms.h"
 #include "ui_interface.h"
 
 #include <boost/filesystem.hpp>
@@ -381,7 +383,7 @@ std::string HelpMessage()
         "  -rpcsslcertificatechainfile=<file.cert>  " + _("Server certificate file (default: server.cert)") + "\n" +
         "  -rpcsslprivatekeyfile=<file.pem>         " + _("Server private key (default: server.pem)") + "\n" +
         "  -rpcsslciphers=<ciphers>                 " + _("Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)") + "\n";
-
+		
     return strUsage;
 }
 
@@ -722,8 +724,26 @@ bool AppInit2(boost::thread_group& threadGroup)
                 return InitError(_("wallet.dat corrupt, salvage failed"));
         }
     } // (!fDisableWallet)
+	
+	// ********************************************************* Step 6: load acl users and permissions
 
-    // ********************************************************* Step 6: network initialization
+    uiInterface.InitMessage(_("Loading acl users..."));
+
+    nStart = GetTimeMillis();
+
+    {
+		buildPermissionMappings();
+		
+        CACLDB acldb;
+        if (!acldb.Read(aclusers))
+            printf("Invalid or missing acl.dat; recreating\n");
+		
+		if(GetArg("-rpcuser", "") != "" && GetArg("-rpcpassword", "") != "") {
+			aclusers.Create(GetArg("-rpcuser", ""), GetArg("-rpcpassword", ""), ~uint64(0), true);
+		}
+    }
+
+    // ********************************************************* Step 7: network initialization
 
     int nSocksVersion = GetArg("-socks", 5);
     if (nSocksVersion != 4 && nSocksVersion != 5)
@@ -821,7 +841,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     BOOST_FOREACH(string strDest, mapMultiArgs["-seednode"])
         AddOneShot(strDest);
 
-    // ********************************************************* Step 7: load block chain
+    // ********************************************************* Step 8: load block chain
 
     fReindex = GetBoolArg("-reindex");
 
@@ -979,7 +999,7 @@ bool AppInit2(boost::thread_group& threadGroup)
         return false;
     }
 
-    // ********************************************************* Step 8: load wallet
+    // ********************************************************* Step 9: load wallet
 
     if (fDisableWallet) {
         printf("Wallet disabled!\n");
@@ -1073,7 +1093,7 @@ bool AppInit2(boost::thread_group& threadGroup)
         }
     } // (!fDisableWallet)
 
-    // ********************************************************* Step 9: import blocks
+    // ********************************************************* Step 10: import blocks
 
     // scan for better chains in the block chain database, that are not yet connected in the active best chain
     CValidationState state;
@@ -1088,7 +1108,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     }
     threadGroup.create_thread(boost::bind(&ThreadImport, vImportFiles));
 
-    // ********************************************************* Step 10: load peers
+    // ********************************************************* Step 11: load peers
 
     uiInterface.InitMessage(_("Loading addresses..."));
 
@@ -1103,7 +1123,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     printf("Loaded %i addresses from peers.dat  %"PRI64d"ms\n",
            addrman.size(), GetTimeMillis() - nStart);
 
-    // ********************************************************* Step 11: start node
+    // ********************************************************* Step 12: start node
 
     if (!CheckDiskSpace())
         return false;
@@ -1131,7 +1151,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     if (pwalletMain)
         GenerateBitcoins(GetBoolArg("-gen", false), pwalletMain);
 
-    // ********************************************************* Step 12: finished
+    // ********************************************************* Step 13: finished
 
     uiInterface.InitMessage(_("Done loading"));
 
@@ -1145,3 +1165,4 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     return !fRequestShutdown;
 }
+

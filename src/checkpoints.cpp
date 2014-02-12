@@ -68,8 +68,6 @@ namespace Checkpoints
         if (i == checkpoints.end()) return true;
 		uint256 hash2 = Hash(BEGIN(hash), END(hash));
 		
-		std::cout << "Comparing " << hash2.GetHex() << " to " << i->second.GetHex() << std::endl;
-		
         return hash2 == i->second;
     }
 
