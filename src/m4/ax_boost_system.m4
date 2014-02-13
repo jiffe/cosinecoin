@@ -65,16 +65,18 @@ AC_DEFUN([AX_BOOST_SYSTEM],
 		export LDFLAGS
 
         AC_CACHE_CHECK(whether the Boost::System library is available,
-					   ax_cv_boost_system,
-        [AC_LANG_PUSH([C++])
-			 CXXFLAGS_SAVE=$CXXFLAGS
+						ax_cv_boost_system,
+						[AC_LANG_PUSH([C++])
+							CXXFLAGS_SAVE=$CXXFLAGS
 
-			 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@include <boost/system/error_code.hpp>]],
-                                   [[boost::system::system_category]])],
-                   ax_cv_boost_system=yes, ax_cv_boost_system=no)
-			 CXXFLAGS=$CXXFLAGS_SAVE
-             AC_LANG_POP([C++])
-		])
+							 AC_COMPILE_IFELSE(
+								[AC_LANG_PROGRAM([[@%:@include <boost/system/error_code.hpp>]], [[boost::system::system_category]])],
+								ax_cv_boost_system=yes,
+								ax_cv_boost_system=no)
+								
+							 CXXFLAGS=$CXXFLAGS_SAVE
+							 AC_LANG_POP([C++])
+						])
 		if test "x$ax_cv_boost_system" = "xyes"; then
 			AC_SUBST(BOOST_CPPFLAGS)
 
@@ -107,7 +109,7 @@ AC_DEFUN([AX_BOOST_SYSTEM],
 
             fi
             if test "x$ax_lib" = "x"; then
-                AC_MSG_ERROR(Could not find a version of the library!)
+                AC_MSG_ERROR(Could not find a version of the boost::system library!)
             fi
 			if test "x$link_system" = "xno"; then
 				AC_MSG_ERROR(Could not link against $ax_lib !)
@@ -118,3 +120,4 @@ AC_DEFUN([AX_BOOST_SYSTEM],
 	LDFLAGS="$LDFLAGS_SAVED"
 	fi
 ])
+

@@ -1,7 +1,7 @@
 bin_PROGRAMS = cosinecoind
 
 cosinecoind_LDFLAGS = -rdynamic -L/usr/local/lib -pthread
-cosinecoind_CPPFLAGS = -I/usr/local/include/ -DBOOST_SPIRIT_THREADSAFE -D_FILE_OFFSET_BITS=64 -DUSE_UPNP=0 -DUSE_IPV6=1
+cosinecoind_CPPFLAGS = -I/usr/local/include/ -DBOOST_SPIRIT_THREADSAFE -D_FILE_OFFSET_BITS=64 -DUSE_IPV6=1
 
 cosinecoind_LDADD = 	-lboost_system \
 						-lboost_filesystem \
@@ -11,8 +11,7 @@ cosinecoind_LDADD = 	-lboost_system \
 						-lmemenv \
 						-ldb_cxx \
 						-lssl \
-						-lcrypto \
-						-lminiupnpc
+						-lcrypto
 
 cosinecoind_SOURCES = 	acldb.cpp \
 						aclperms.cpp \

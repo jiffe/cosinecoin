@@ -143,20 +143,21 @@ if test "x$want_boost" = "xyes"; then
 
     AC_REQUIRE([AC_PROG_CXX])
     AC_LANG_PUSH(C++)
-        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-    @%:@include <boost/version.hpp>
+	
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+		@%:@include <boost/version.hpp>
     ]], [[
-    #if BOOST_VERSION >= $WANT_BOOST_VERSION
-    // Everything is okay
-    #else
-    #  error Boost version is too old
-    #endif
+		#if BOOST_VERSION >= $WANT_BOOST_VERSION
+		// Everything is okay
+		#else
+		#  error Boost version is too old
+		#endif
     ]])],[
         AC_MSG_RESULT(yes)
-    succeeded=yes
-    found_system=yes
-        ],[
-        ])
+		succeeded=yes
+		found_system=yes
+	])
+	
     AC_LANG_POP([C++])
 
 
@@ -226,26 +227,27 @@ if test "x$want_boost" = "xyes"; then
         export LDFLAGS
 
         AC_LANG_PUSH(C++)
-            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-        @%:@include <boost/version.hpp>
+        
+		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+			@%:@include <boost/version.hpp>
         ]], [[
-        #if BOOST_VERSION >= $WANT_BOOST_VERSION
-        // Everything is okay
-        #else
-        #  error Boost version is too old
-        #endif
+			#if BOOST_VERSION >= $WANT_BOOST_VERSION
+			// Everything is okay
+			#else
+			#  error Boost version is too old
+			#endif
         ]])],[
             AC_MSG_RESULT(yes)
-        succeeded=yes
-        found_system=yes
-            ],[
-            ])
+			succeeded=yes
+			found_system=yes
+		])
         AC_LANG_POP([C++])
     fi
 
     if test "$succeeded" != "yes" ; then
         if test "$_version" = "0" ; then
-            AC_MSG_NOTICE([[We could not detect the boost libraries (version $boost_lib_version_req_shorten or higher). If you have a staged boost library (still not installed) please specify \$BOOST_ROOT in your environment and do not give a PATH to --with-boost option.  If you are sure you have boost installed, then check your version number looking in <boost/version.hpp>. See http://randspringer.de/boost for more documentation.]])
+			AC_MSG_RESULT([no])
+            AC_MSG_ERROR([[We could not detect the boost libraries (version $boost_lib_version_req_shorten or higher). If you have a staged boost library (still not installed) please specify \$BOOST_ROOT in your environment and do not give a PATH to --with-boost option.  If you are sure you have boost installed, then check your version number looking in <boost/version.hpp>. See http://randspringer.de/boost for more documentation.]])
         else
             AC_MSG_NOTICE([Your boost libraries seems to old (version $_version).])
         fi

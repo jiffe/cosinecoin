@@ -128,18 +128,10 @@ AC_DEFUN([AX_BOOST_THREAD],
 
             fi
             if test "x$ax_lib" = "x"; then
-                AC_MSG_ERROR(Could not find a version of the library!)
+                AC_MSG_ERROR(Could not find a version of the boost::thread library!)
             fi
-			if test "x$link_thread" = "xno"; then
-				AC_MSG_ERROR(Could not link against $ax_lib !)
-                        else
-                           case "x$host_os" in
-                              *bsd* )
-				BOOST_LDFLAGS="-pthread $BOOST_LDFLAGS"
-                              break;
-                              ;;
-                           esac
-
+			if test "x$link_thread" != "xyes"; then
+				AC_MSG_ERROR([Could not link against boost::thread !])
 			fi
 		fi
 
@@ -147,3 +139,4 @@ AC_DEFUN([AX_BOOST_THREAD],
 	LDFLAGS="$LDFLAGS_SAVED"
 	fi
 ])
+
